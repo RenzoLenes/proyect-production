@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,110 +14,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuthStore } from "@/lib/store/authStore";
 
-// Credenciales simuladas por rol
 const credentialsByRole = [
-  {
-    role: "admin",
-    email: "admin@logitrack.com",
-    password: "admin123",
-    permissions: {
-      dashboard: true,
-      production: true,
-      suppliers: true,
-      transport: true,
-      config: true,
-    },
-  },
-  {
-    role: "supervisor",
-    email: "supervisor@logitrack.com",
-    password: "supervisor123",
-    permissions: {
-      dashboard: true,
-      production: true,
-      suppliers: true,
-      transport: true,
-      config: false,
-    },
-  },
-  {
-    role: "operario",
-    email: "operario@logitrack.com",
-    password: "operario123",
-    permissions: {
-      dashboard: false,
-      production: true,
-      suppliers: false,
-      transport: false,
-      config: false,
-    },
-  },
-  {
-    role: "proveedor",
-    email: "proveedor@logitrack.com",
-    password: "proveedor123",
-    permissions: {
-      dashboard: false,
-      production: false,
-      suppliers: true,
-      transport: false,
-      config: false,
-    },
-  },
-  {
-    role: "conductor",
-    email: "conductor@logitrack.com",
-    password: "conductor123",
-    permissions: {
-      dashboard: false,
-      production: false,
-      suppliers: false,
-      transport: true,
-      config: false,
-    },
-  },
+  { role: "admin", email: "admin@foxatel.com", password: "admin123", permissions: { dashboard: true, production: true, suppliers: true, transport: true, config: true } },
+  { role: "supervisor", email: "supervisor@foxatel.com", password: "supervisor123", permissions: { dashboard: true, production: true, suppliers: true, transport: true, config: false } },
+  { role: "operario", email: "operario@foxatel.com", password: "operario123", permissions: { dashboard: false, production: true, suppliers: false, transport: false, config: false } },
+  { role: "proveedor", email: "proveedor@foxatel.com", password: "proveedor123", permissions: { dashboard: false, production: false, suppliers: true, transport: false, config: false } },
+  { role: "conductor", email: "conductor@foxatel.com", password: "conductor123", permissions: { dashboard: false, production: false, suppliers: false, transport: true, config: false } },
 ];
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const { role, email, password, setCredentials } = useAuthStore();
   const router = useRouter();
 
   const handleRoleChange = (role: string) => {
-    setSelectedRole(role);
     const credentials = credentialsByRole.find((cred) => cred.role === role);
     if (credentials) {
-      setEmail(credentials.email);
-      setPassword(credentials.password);
+      setCredentials(credentials.role, credentials.email, credentials.password, credentials.permissions);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Simulación de autenticación
     setTimeout(() => {
-      setIsLoading(false);
-      const credentials = credentialsByRole.find((cred) => cred.role === selectedRole);
-      
+      const credentials = credentialsByRole.find((cred) => cred.role === role);
       if (credentials) {
-        // Almacenar información del usuario y permisos en localStorage
-        localStorage.setItem('userRole', credentials.role);
-        localStorage.setItem('userPermissions', JSON.stringify(credentials.permissions));
-        
-        // Redirigir según los permisos
+        localStorage.setItem("userRole", credentials.role);
+        localStorage.setItem("userPermissions", JSON.stringify(credentials.permissions));
+
         if (credentials.permissions.dashboard) {
-          router.push('/dashboard');
+          router.push("/dashboard");
         } else if (credentials.permissions.production) {
-          router.push('/production');
+          router.push("/production");
         } else if (credentials.permissions.suppliers) {
-          router.push('/suppliers');
+          router.push("/suppliers");
         } else if (credentials.permissions.transport) {
-          router.push('/transport');
+          router.push("/transport");
         }
       }
     }, 1000);
@@ -158,37 +92,22 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ejemplo@empresa.com"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <Input id="email" type="email" required autoComplete="email" value={email} readOnly />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <Input id="password" type="password" required autoComplete="current-password" value={password} readOnly />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading || !selectedRole}>
-                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              <Button type="submit" className="w-full">
+                Iniciar Sesión
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {selectedRole && (
+        {role && (
           <div className="text-center text-sm text-muted-foreground">
-            Rol seleccionado: <span className="font-medium capitalize">{selectedRole}</span>
+            Rol seleccionado: <span className="font-medium capitalize">{role}</span>
           </div>
         )}
       </div>

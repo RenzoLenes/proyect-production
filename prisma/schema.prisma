@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+// Empresa
+model Empresa {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  usuarios    Usuario[]
+  tiposConfeccion TipoConfeccion[]
+}
+
+// Usuario y Roles
+model Usuario {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  email       String @unique
+  pasword     String
+  empresaId   Int
+  empresa     Empresa @relation(fields: [empresaId], references: [id])
+  roles       UsuarioRol[]
+}
+
+model Rol {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  permisos    Permiso[]
+  usuarios    UsuarioRol[]
+}
+
+model Permiso {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  roles       Rol[]
+}
+
+model UsuarioRol {
+  id       Int    @id @default(autoincrement())
+  usuarioId Int
+  rolId    Int
+  usuario  Usuario @relation(fields: [usuarioId], references: [id])
+  rol      Rol     @relation(fields: [rolId], references: [id])
+}
+
+// Tipos de confección
+model TipoConfeccion {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  empresaId   Int
+  empresa     Empresa @relation(fields: [empresaId], references: [id])
+  procesos    Proceso[]
+}
+
+model Proceso {
+  id            Int    @id @default(autoincrement())
+  nombre        String
+  tipoConfeccionId Int
+  tipoConfeccion TipoConfeccion @relation(fields: [tipoConfeccionId], references: [id])
+  subprocesos   Subproceso[]
+}
+
+model Subproceso {
+  id            Int    @id @default(autoincrement())
+  nombre        String
+  procesoId     Int
+  proceso       Proceso @relation(fields: [procesoId], references: [id])
+  porDefectoInterno Boolean
+  bloques       BloqueSubproceso[]
+}
+
+model Bloque {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  subprocesos BloqueSubproceso[]
+
+  OrdenEnvioBloque OrdenEnvioBloque[]
+}
+
+// Relación entre bloque y subprocesos
+model BloqueSubproceso {
+  id          Int    @id @default(autoincrement())
+  bloqueId    Int
+  subprocesoId Int
+  bloque      Bloque @relation(fields: [bloqueId], references: [id])
+  subproceso  Subproceso @relation(fields: [subprocesoId], references: [id])
+  tipoEjecucion String  // Puede ser "Interno" o "Externo"
+}
+
+// Transporte y seguimiento
+model OrdenEnvio {
+  id          Int    @id @default(autoincrement())
+  fechaSalida DateTime
+  bloques     OrdenEnvioBloque[]
+  seguimiento SeguimientoTransporte[]
+}
+
+model OrdenEnvioBloque {
+  id         Int    @id @default(autoincrement())
+  ordenEnvioId Int
+  bloqueId   Int
+  ordenEnvio OrdenEnvio @relation(fields: [ordenEnvioId], references: [id])
+  bloque     Bloque @relation(fields: [bloqueId], references: [id])
+}
+
+model SeguimientoTransporte {
+  id         Int    @id @default(autoincrement())
+  ordenEnvioId Int
+  estado     String  // "Pendiente", "En tránsito", "Entregado", "Finalizado", "Regresado a planta"
+  fecha      DateTime @default(now())
+  ordenEnvio OrdenEnvio @relation(fields: [ordenEnvioId], references: [id])
+}

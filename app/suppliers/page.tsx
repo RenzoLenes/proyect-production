@@ -1,18 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,84 +10,113 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search,
   QrCode,
   Filter,
-  Truck,
-  PackageCheck,
-  AlertCircle,
-  Clock,
   Menu,
 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import SideBar from "@/components/sidebar";
-
+import { mockBlocks } from "@/data/mockBlocks";
+import { processes } from "@/types/process";
+import { useProductionStore } from "@/lib/store/productionStore";
+import { Block, BlockStatus, ProcessType } from "@/types/block";
+import { BlockOperationDialog } from "@/components/production/BlockOperationDialog";
+import { BlockStatusLabels } from "@/types/block";
 // Mock data for demonstration
-const mockBlocks = [
-  {
-    id: "B001",
-    reference: "CG-2024-0001",
-    status: "pending",
-    quantity: 50,
-    deadline: "2024-04-01",
-    process: "Estampado",
-    receivedDate: null,
-  },
-  {
-    id: "B002",
-    reference: "LC-2024-0002",
-    status: "in_progress",
-    quantity: 65,
-    deadline: "2024-04-05",
-    process: "Bordado",
-    receivedDate: "2024-03-20",
-  },
-  {
-    id: "B003",
-    reference: "FT-2024-003",
-    status: "ready_pickup",
-    quantity: 45,
-    deadline: "2024-04-03",
-    process: "Estampado",
-    receivedDate: "2024-03-18",
-  },
-];
+import { operators } from "@/data/operators";
+import { BlockCard } from "@/components/production/BlockCard";
+import { useBlockUtils } from "@/utils/useBlockUtils"
+import { EditTypeDialog } from "@/components/production/EditTypeDialog";
 
-const statusMap = {
-  pending: {
-    label: "Pendiente",
-    color: "secondary",
-  },
-  in_progress: {
-    label: "En Proceso",
-    color: "default",
-  },
-  ready_pickup: {
-    label: "Listo para Recoger",
-    color: "success",
-  },
-  completed: {
-    label: "Completado",
-    color: "primary",
-  },
-};
 
 export default function SuppliersPage() {
+  const { completeSubprocess, moveToNextProcess } = useBlockUtils();
+
+  const tabs = [
+    { value: "all", label: "Todos" },
+    { value: BlockStatus.stored, label: "Almacenados" },
+    { value: BlockStatus.pending, label: "Pendientes" },
+    { value: BlockStatus.in_progress, label: "En Proceso" },
+    { value: BlockStatus.completed, label: "Completados" },
+  ];
+
+
+  const {
+    blocks,
+    shippingOrders,
+    orders,
+    setBlocks,
+    addBlock,
+    updateBlock,
+    addShippingOrder,
+    updateShippingOrder,
+  } = useProductionStore();
+
+
+
+
   const [scanMode, setScanMode] = useState(false);
-  const [selectedBlock, setSelectedBlock] = useState<any>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const toggleSidebar = () => setIsMobileOpen(!isMobileOpen);
+  const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
+  const [selectedSubprocess, setSelectedSubprocess] = useState<string>("");
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [numberOfOperators, setNumberOfOperators] = useState<number>(1);
+  const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
+  const [scannedBlock, setScannedBlock] = useState<Block | null>(null);
+  const [showScanDialog, setShowScanDialog] = useState(false);
+
+
+  const [editingSubprocess, setEditingSubprocess] = useState<{
+    blockId: string;
+    subprocessId: string;
+    currentType: ProcessType.Interno | ProcessType.Externo;
+  } | null>(null);
+
+
+  // Obtener datos de los bloques seleccionados
+  const selectedBlocksData = blocks.filter(block =>
+    selectedBlocks.includes(block.id)
+  );
+
+
+  // Obtener procesos únicos de los bloques seleccionados
+  const uniqueProcessIds = Array.from(new Set(selectedBlocksData.map(block => block.processId)));
+
+  const handleMoveToNextProcess = (blockId: string) => {
+    moveToNextProcess(blockId); // Mover al siguiente proceso
+  };
+
+  // Función para manejar completado de subprocesos
+  // Función para manejar completado de subprocesos
+  const handleSubprocessComplete = (blockId: string, subprocessId: string) => {
+    completeSubprocess(blockId, subprocessId); // Llama a la función del utilitario
+    setSelectedBlocks([]);
+  };
+
+
+  const simulateScan = () => {
+    let foundBlock: Block | null = null;
+
+    while (!foundBlock) {
+      const randomIndex = Math.floor(Math.random() * blocks.length);
+      const block = blocks[randomIndex];
+
+      // Verificar si el bloque tiene al menos un subproceso de tipo 'Externo'
+      if (block.subprocesses.some(sp => sp.type === ProcessType.Externo)) {
+        foundBlock = block; // Asignar el bloque encontrado
+      }
+    }
+
+    // Una vez que tenemos un bloque válido, actualizar el estado
+    setScannedBlock(foundBlock);
+    setShowScanDialog(true);
+  };
+
 
 
   return (
@@ -127,13 +146,33 @@ export default function SuppliersPage() {
                   <Button
                     variant={scanMode ? "default" : "outline"}
                     size="icon"
-                    onClick={() => setScanMode(!scanMode)}
+                    onClick={simulateScan}  // Cambiamos aquí
                   >
                     <QrCode className="h-5 w-5" />
                   </Button>
                   <Button variant="outline" size="icon">
                     <Filter className="h-5 w-5" />
                   </Button>
+
+
+                  {/* Agrega el diálogo de escaneo */}
+                  <Dialog open={showScanDialog} onOpenChange={setShowScanDialog}>
+                    <DialogContent>
+                      <BlockOperationDialog
+                        open={showScanDialog}
+                        onOpenChange={setShowScanDialog}
+                        title="Bloque Escaneado"
+                        block={scannedBlock}
+                        operators={operators}
+                        numberOfOperators={numberOfOperators}
+                        onNumberOfOperatorsChange={setNumberOfOperators}
+                        selectedOperators={selectedOperators}
+                        onSelectedOperatorsChange={setSelectedOperators}
+                        onSubprocessComplete={handleSubprocessComplete}
+                        subprocessType={ProcessType.Externo}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 
@@ -151,146 +190,121 @@ export default function SuppliersPage() {
 
           {/* Main content */}
           <div className="container mx-auto px-4 pt-8">
-            {scanMode ? (
-              <Card className="p-6 text-center space-y-4">
-                <div className="aspect-square max-w-sm mx-auto border-2 border-dashed rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Cámara activada para escaneo</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Escanea el código QR del bloque para confirmar recepción
-                </p>
-              </Card>
-            ) : (
-              <Tabs defaultValue="all" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="all">Todos</TabsTrigger>
-                  <TabsTrigger value="pending">Pendientes</TabsTrigger>
-                  <TabsTrigger value="in_progress">En Proceso</TabsTrigger>
-                  <TabsTrigger value="ready">Listos</TabsTrigger>
-                </TabsList>
 
-                <ScrollArea className="h-[calc(100vh-220px)]">
-                  <div className="space-y-4">
-                    {mockBlocks.map((block) => (
-                      <Card
-                        key={block.id}
-                        className="p-4 hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => setSelectedBlock(block)}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium">{block.reference}</h3>
-                              <Badge
-                                variant={statusMap[block.status as keyof typeof statusMap]
-                                  .color as any}
-                              >
-                                {statusMap[block.status as keyof typeof statusMap]
-                                  .label}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <PackageCheck className="h-4 w-4" />
-                                {block.quantity} unidades
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                Entrega: {block.deadline}
-                              </span>
-                            </div>
-                          </div>
-                          {block.status === "ready_pickup" && (
-                            <Button size="sm" className="shrink-0">
-                              <Truck className="h-4 w-4 mr-2" />
-                              Solicitar Recogida
-                            </Button>
-                          )}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </Tabs>
-            )}
+            <Tabs defaultValue="all" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-5">
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {tabs.map((tab) => (
+                <TabsContent key={tab.value} value={tab.value}>
+                  <ScrollArea className="h-[calc(100vh-220px)]">
+                    <div className="space-y-4">
+                      {blocks
+                        .filter((block) => block.subprocesses.some(sp => sp.type === ProcessType.Externo))
+                        .filter((block) =>
+                          tab.value === 'all' ? true : block.status === tab.value
+                        )
+                        .filter((block) => {
+                          // Verificar si el bloque está en un envío no entregado
+                          const isInPendingShipping = shippingOrders.some(so =>
+                            so.status !== 'Entregado' &&
+                            orders.some(o =>
+                              so.orderIds.includes(o.id) &&
+                              o.blockId === block.id
+                            )
+                          );
+                          return !isInPendingShipping;
+                        })
+                        .map((block) => (
+                          <BlockCard
+                            key={block.id}
+                            block={block}
+                            selectedBlocks={selectedBlocks}
+                            setSelectedBlocks={setSelectedBlocks}
+                            setEditingSubprocess={setEditingSubprocess}
+                            moveToNextProcess={handleMoveToNextProcess}
+                            processes={processes} // Asegúrate de tener las definiciones de procesos a mano
+                          />
+                        ))}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              ))}
+            </Tabs>
+
           </div>
 
-          {/* Block Details Dialog */}
-          <Dialog open={!!selectedBlock} onOpenChange={() => setSelectedBlock(null)}>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Detalles del Bloque</DialogTitle>
-              </DialogHeader>
-              {selectedBlock && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">{selectedBlock.reference}</h3>
-                      <Badge
-                        variant={statusMap[selectedBlock.status as keyof typeof statusMap]
-                          .color as any}
-                      >
-                        {statusMap[selectedBlock.status as keyof typeof statusMap]
-                          .label}
-                      </Badge>
-                    </div>
-                  </div>
+          {/* Fixed bottom bar for batch operations */}
+          {selectedBlocks.length > 0 && (
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+              <div className="container mx-auto flex items-center justify-between px-8">
+                <span className="text-sm">
+                  {selectedBlocks.length} bloques seleccionados
+                </span>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault(); // Evita que el diálogo se abra automáticamente
+                        if (uniqueProcessIds.length === 1) {
+                          // Si todos los bloques son del mismo proceso, abre el diálogo principal
+                          setShowBlockDialog(true);
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <Label>Cantidad</Label>
-                      <p className="mt-1">{selectedBlock.quantity} unidades</p>
-                    </div>
-                    <div>
-                      <Label>Proceso</Label>
-                      <p className="mt-1">{selectedBlock.process}</p>
-                    </div>
-                    <div>
-                      <Label>Fecha de Entrega</Label>
-                      <p className="mt-1">{selectedBlock.deadline}</p>
-                    </div>
-                    <div>
-                      <Label>Fecha de Recepción</Label>
-                      <p className="mt-1">
-                        {selectedBlock.receivedDate || "Pendiente"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Cambiar Estado</Label>
-                    <Select defaultValue={selectedBlock.status}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendiente</SelectItem>
-                        <SelectItem value="in_progress">En Proceso</SelectItem>
-                        <SelectItem value="ready_pickup">
-                          Listo para Recoger
-                        </SelectItem>
-                        <SelectItem value="completed">Completado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {selectedBlock.status === "ready_pickup" && (
-                    <div className="space-y-2">
-                      <Label>Notas para Transporte</Label>
-                      <Input placeholder="Instrucciones especiales para la recogida" />
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setSelectedBlock(null)}>
-                      Cerrar
+                        } else {
+                          // Si no, muestra el modal de advertencia
+                          setShowWarningDialog(true);
+                        }
+                      }}
+                    >
+                      Registrar Operación
                     </Button>
-                    <Button>Guardar Cambios</Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+                  </DialogTrigger>
+
+
+                </Dialog>
+
+                <Dialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+                  <DialogContent>
+                    <BlockOperationDialog
+                      open={showBlockDialog}
+                      onOpenChange={setShowBlockDialog}
+                      title="Registrar Operación"
+                      block={selectedBlocksData}
+                      operators={operators}
+                      numberOfOperators={numberOfOperators}
+                      onNumberOfOperatorsChange={setNumberOfOperators}
+                      selectedOperators={selectedOperators}
+                      onSelectedOperatorsChange={setSelectedOperators}
+                      onSubprocessComplete={handleSubprocessComplete}
+                      subprocessType={ProcessType.Externo}
+                    />
+                  </DialogContent>
+                </Dialog>
+                {/* Modal de advertencia */}
+                <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Advertencia</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p>Los bloques seleccionados no pertenecen al mismo proceso.</p>
+                      <Button
+                        className="w-full"
+                        onClick={() => setShowWarningDialog(false)}
+                      >
+                        Cerrar
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
