@@ -9,6 +9,13 @@ interface ProcessStore {
   toggleProcess: (id: string) => void;
   addSubprocess: (processId: string, subprocess: SubProcess) => void;
   removeSubprocess: (processId: string, subprocessId: string) => void;
+  reorderProcesses: (newOrder: Process[]) => void;
+  updateSubprocess: (
+    processId: string,
+    subprocessId: string,
+    updates: Partial<SubProcess>
+  ) => void;
+
 }
 
 export const useProcessStore = create<ProcessStore>((set) => ({
@@ -51,4 +58,24 @@ export const useProcessStore = create<ProcessStore>((set) => ({
           : p
       ),
     })),
+    
+    updateSubprocess: (processId, subprocessId, updates) => 
+      set(state => ({
+        processes: state.processes.map(process => 
+          process.id === processId
+            ? {
+                ...process,
+                subprocesses: process.subprocesses.map(subprocess =>
+                  subprocess.id === subprocessId
+                    ? { ...subprocess, ...updates }
+                    : subprocess
+                )
+              }
+            : process
+        )
+      })),
+    
+    reorderProcesses: (newOrder) => set(() => ({
+      processes: newOrder
+    }))
 }));

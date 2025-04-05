@@ -23,11 +23,16 @@ interface ConfigState {
     background: string; // Almacenar en HSL
     foreground: string;
   };
-  
+  tipoConfeccion: string;
+
+
   setCompany: (company: Partial<ConfigState['company']>) => void;
   setTheme: (theme: Theme) => void;
   setColors: (colors: Partial<ConfigState['colors']>) => void;
   resetColors: () => void; // Añadir función para restablecer colores
+  setTipoConfeccion: (tipo: string) => void;
+  initializeTipoConfeccion: (defaultTipo: string) => void;
+
 
 }
 
@@ -40,8 +45,9 @@ export const useConfigStore = create(
       },
       theme: 'light',
       colors: { ...defaultColors },
-      setCompany: (company) => set((state) => ({ 
-        company: { ...state.company, ...company } 
+      tipoConfeccion: '', // Mejor iniciar vacío
+      setCompany: (company) => set((state) => ({
+        company: { ...state.company, ...company }
       })),
       setTheme: (theme) => set({ theme }),
       setColors: (colors) => set((state) => ({
@@ -54,6 +60,11 @@ export const useConfigStore = create(
         }
       })),
       resetColors: () => set({ colors: defaultColors }), // Implementar función para restablecer colores
+      setTipoConfeccion: (tipo) => set({ tipoConfeccion: tipo }),
+      initializeTipoConfeccion: (defaultTipo) => set((state) => ({
+        tipoConfeccion: state.tipoConfeccion || defaultTipo
+      })),
+      
     }),
     {
       name: 'config-storage',

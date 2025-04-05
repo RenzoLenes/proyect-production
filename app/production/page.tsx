@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,187 +21,317 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, QrCode, Filter, CheckCircle2, Menu } from "lucide-react";
+import { Search, QrCode, Filter, Menu, ChevronLeft, ChevronRight, Loader2, FolderX } from "lucide-react";
 import SideBar from "@/components/sidebar";
-import { Block, BlockStatusLabels, ProcessType, ShippingOrdeStatus } from "@/types/block";
-import { processes } from "@/types/process";
-import { useProductionStore } from "@/lib/store/productionStore";
-import { mockBlocks } from "@/data/mockBlocks";
-import { BlockOperationDialog } from "@/components/production/BlockOperationDialog";
-import { operators } from "@/data/operators";
+import {
+  obtenerMovimientosPendientes
+} from '@/actions/procesoc/crud-movprocesoc';
+
+import { MovimientoProcesoResultado } from '@/interfaces/movproceso.interface';
+import { ParametrosMovimiento } from '@/actions/procesoc/crud-movprocesoc';
+import {
+  getProcesosByTipoConfeccion,
+} from '../../actions/procesos/crud-proceso'; // Adjust the import path as needed
+import {
+  getSubprocesosByProceso
+} from '../../actions/subprocesos/crud-subprocesos'; // Adjust the import path as needed
 import { BlockCard } from "@/components/production/BlockCard";
-import { useBlockUtils } from "@/utils/useBlockUtils";
-import { EditTypeDialog } from "@/components/production/EditTypeDialog";
-// Mock data for demonstration
+import { getPersonalByTipo } from "@/actions/personal/crud-personal";
+import { Personal } from "@/interfaces/personal.interface";
+import { useConfigStore } from "@/lib/store/configStore";
+import { TipoConfeccionSelector } from "@/components/config/ConfeccionSelector";
+import { updateMovimientoDByParams, UpdateMovimientoDData, UpdateMovimientoDParams } from "@/actions/procesod/crud-movprocesod";
+import { BlockOperationDialog } from "@/components/production/BlockOperationDialog";
+import { Block } from "@/types/block";
 
-const tabs = [
-  { value: 'all', label: 'Todos' },
-  { value: 'Corte', label: 'Corte' },
-  { value: 'Pre-Costura', label: 'Pre-Costura' },
-  { value: 'Armado', label: 'Armado' },
-  { value: 'Costura', label: 'Costura' },
-  { value: 'Pretinado', label: 'Pretinado' },
-  { value: 'Acabado', label: 'Acabado' },
-];
 
+const getBlockId = (movimiento: MovimientoProcesoResultado) => {
+  return `${movimiento.codigo_folder}-${movimiento.serie}-${movimiento.numero}-${movimiento.item}`;
+};
 export default function ProductionPage() {
-
-  const {
-    completeSubprocess,
-    moveToNextProcess,
-    updateShippingStatus
-  } = useBlockUtils();
-
-
-  const {
-    blocks,
-    shippingOrders,
-    orders,
-    setBlocks,
-    addBlock,
-    updateBlock,
-    addShippingOrder,
-    updateShippingOrder,
-  } = useProductionStore();
-
-
-  const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
-  const [scanMode, setScanMode] = useState(false);
+  // Pagination and state management
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [movimientos, setMovimientos] = useState<MovimientoProcesoResultado[]>([]);
+  const [procesos, setProcesos] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const toggleSidebar = () => setIsMobileOpen(!isMobileOpen);
-  const [scannedBlock, setScannedBlock] = useState<Block | null>(null);
+
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showWarningDialog, setShowWarningDialog] = useState(false);
-  const [showScanDialog, setShowScanDialog] = useState(false);
-  const [numberOfOperators, setNumberOfOperators] = useState<number>(1);
+  const [numberOfOperators, setNumberOfOperators] = useState(1);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
-  const [editingSubprocess, setEditingSubprocess] = useState<{
-    blockId: string;
-    subprocessId: string;
-    currentType: ProcessType.Interno | ProcessType.Externo;
-  } | null>(null);
-  const [confirmExternalDialog, setConfirmExternalDialog] = useState(false);
-  const [pendingTypeChange, setPendingTypeChange] = useState<{
-    newType: ProcessType.Interno | ProcessType.Externo;
-    subprocessInfo: {
-      blockId: string;
-      subprocessId: string;
-      currentType: ProcessType.Interno | ProcessType.Externo;
+
+  const [selectedBlocks, setSelectedBlocks] = useState<Block[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [operators, setOperators] = useState<Personal[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const { tipoConfeccion } = useConfigStore();
+  const [procesosTabs, setProcesosTabs] = useState<Array<{ value: string, label: string }>>([]);
+  const { initializeTipoConfeccion } = useConfigStore();
+
+
+
+
+  useEffect(() => {
+    // Cuando cargues los tipos de confección
+    initializeTipoConfeccion('001'); // O el valor por defecto que prefieras
+  }, []);
+
+  useEffect(() => {
+    const loadProcesosTabs = async () => {
+      try {
+        const procesos = await getProcesosByTipoConfeccion(tipoConfeccion);
+
+        const tabsDinamicos = [
+          { value: 'all', label: 'Todos' }, // Tab "Todos" siempre visible
+          ...procesos.map(proceso => ({
+            value: proceso.pro_codpro,
+            label: proceso.pro_nompro
+          }))
+        ];
+
+        setProcesosTabs(tabsDinamicos);
+      } catch (error) {
+        console.error("Error cargando procesos:", error);
+        setProcesosTabs([{ value: 'all', label: 'Todos' }]); // Al menos mostrar "Todos"
+      }
     };
-  } | null>(null);
+
+    loadProcesosTabs();
+  }, [tipoConfeccion]); // Se ejecuta cuando 
+
+  const [filters, setFilters] = useState<ParametrosMovimiento>({
+    tipoConfeccion: tipoConfeccion, // Usa el valor del store
+    proceso: "(TODOS)",
+    calidad: "(TODOS)",
+    tipo: "(TODOS)",
+    color: "(TODOS)",
+    costurero: "(TODOS)",
+    tipoModa: "001"
+  });
 
 
 
+  // Add a function to handle block selection
+  const handleBlockSelection = (block: Block) => {
+    setSelectedBlocks(prev =>
+      prev.some(b => b.id === block.id)
+        ? prev.filter(b => b.id !== block.id)
+        : [...prev, block]
+    );
+  };
 
-  // Obtener datos de los bloques seleccionados
-  const selectedBlocksData = blocks.filter(block =>
-    selectedBlocks.includes(block.id)
+  // Agrupar movimientos por bloque (serie-numero-item)
+  const groupedBlocks = useMemo(() => {
+    const groups: Record<string, MovimientoProcesoResultado[]> = {};
+
+    movimientos.forEach(movimiento => {
+      const blockId = getBlockId(movimiento);
+      if (!groups[blockId]) {
+        groups[blockId] = [];
+      }
+      groups[blockId].push(movimiento);
+    });
+
+    return Object.entries(groups).map(([id, movs]) => ({
+      id,
+      movimientos: movs,
+      procesoActual: movs[0].nombre_proceso,
+      codigoProceso: movs[0].codigo_proceso,
+      procesoAnterior: movs[0].proceso_ant,
+      procesoSuperior: movs[0].proceso_sup,
+      // Añadiendo los campos requeridos (asumiendo que están en MovimientoProcesoResultado)
+      pro_codtic: tipoConfeccion, // Valor por defecto si no existe
+      pro_codfol: movs[0].codigo_folder,  // Valor por defecto si no existe
+      pro_numser: movs[0].serie, // Valor por defecto si no existe
+      pro_numdoc: movs[0].numero, // Valor por defecto si no existe
+      pro_itemov: Number(movs[0].item) // Usando Number()     // Valor por defecto si no existe
+
+    }));
+  }, [movimientos, tipoConfeccion]);
+
+  // Filtrar bloques
+  const filteredBlocks = useMemo(() => {
+    return groupedBlocks.filter(block =>
+      (activeTab === 'all' || block.codigoProceso === activeTab) &&
+      (searchTerm === '' ||
+        block.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        block.movimientos.some(m =>
+          m.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.activo.toLowerCase().includes(searchTerm.toLowerCase())
+        ))
+    );
+  }, [groupedBlocks, activeTab, searchTerm]);
+
+
+
+  // Paginación de bloques
+  const totalBlocks = filteredBlocks.length;
+  const totalPages = Math.ceil(totalBlocks / itemsPerPage);
+  const indexOfLastBlock = currentPage * itemsPerPage;
+  const indexOfFirstBlock = indexOfLastBlock - itemsPerPage;
+  const currentBlocks = filteredBlocks.slice(indexOfFirstBlock, indexOfLastBlock);
+
+  // Manejador para mover bloque completo
+  const handleMoveBlockToNextProcess = (blockId: string) => {
+
+
+
+    console.log("Moviendo bloque completo:", blockId);
+    // Implementar lógica para mover todos los movimientos del bloque
+    fetchMovimientos(); // Refrescar datos
+  };
+
+  // Fetch movimientos based on filters
+  const fetchMovimientos = async () => {
+
+    try {
+      setLoading(true);
+      const fetchedMovimientos = await obtenerMovimientosPendientes(filters);
+
+      if (fetchedMovimientos && Array.isArray(fetchedMovimientos)) {
+        setMovimientos(fetchedMovimientos);
+      } else {
+        console.error("La respuesta no es un array válido:", fetchedMovimientos);
+        setMovimientos([]);
+      }
+    } catch (error) {
+      console.error("Error fetching movimientos:", error);
+      setMovimientos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchOperators = async () => {
+      try {
+        // 'INTERNO' o 'EXTERNO' según necesites
+        const fetchedOperators = await getPersonalByTipo('INTERNO');
+        setOperators(fetchedOperators);
+        console.log("Fetched operators:", fetchedOperators);
+      } catch (error) {
+        console.error("Error fetching operators:", error);
+        setOperators([]);
+      }
+    };
+
+    fetchOperators();
+  }, []);
+
+  // Fetch processes on component mount
+  useEffect(() => {
+    const fetchProcesses = async () => {
+      try {
+        const fetchedProcesos = await getProcesosByTipoConfeccion(tipoConfeccion);
+        setProcesos(fetchedProcesos);
+      } catch (error) {
+        console.error("Error fetching processes:", error);
+      }
+    };
+
+    fetchProcesses();
+  }, [tipoConfeccion]);
+
+  // Fetch movimientos when filters change
+  useEffect(() => {
+    fetchMovimientos();
+  }, [filters]);
+
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, tipoConfeccion }));
+    fetchMovimientos(); // Esto se disparará cuando cambie tipoConfeccion
+  }, [tipoConfeccion]); // Agrega esta dependencia
+
+  // Filtering logic
+  const filteredMovimientos = movimientos
+    .filter((movimiento) =>
+      activeTab === 'all' ||
+      movimiento.codigo_proceso === activeTab
+    )
+    .filter((movimiento) =>
+      searchTerm === '' ||
+      movimiento.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      movimiento.activo.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  // Pagination calculations
+  const indexOfLastMovimiento = currentPage * itemsPerPage;
+  const indexOfFirstMovimiento = indexOfLastMovimiento - itemsPerPage;
+  const currentMovimientos = filteredMovimientos.slice(
+    indexOfFirstMovimiento,
+    indexOfLastMovimiento
   );
 
-  // Obtener procesos únicos de los bloques seleccionados
-  const uniqueProcessIds = Array.from(new Set(selectedBlocksData.map(block => block.processId)));
+  // Pagination handlers
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
-
-  // Función para simular escaneo
-  const simulateScan = () => {
-    let foundBlock: Block | null = null;
-
-    while (!foundBlock) {
-      const randomIndex = Math.floor(Math.random() * blocks.length);
-      const block = blocks[randomIndex];
-
-      // Verificar si el bloque tiene al menos un subproceso de tipo 'Externo'
-      if (block.subprocesses.some(sp => sp.type === ProcessType.Interno)) {
-        foundBlock = block; // Asignar el bloque encontrado
-      }
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
     }
-
-    // Una vez que tenemos un bloque válido, actualizar el estado
-    setScannedBlock(foundBlock);
-    setShowScanDialog(true);
   };
 
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
-  const handleSubprocessComplete = (blockId: string, subprocessId: string) => {
-    completeSubprocess(blockId, subprocessId); // Llama a la función del utilitario
+  // Reset pagination when changing tabs or search
+  useEffect(() => {
+    setCurrentPage(1);
     setSelectedBlocks([]);
+  }, [activeTab, searchTerm]);
+
+  // Toggle sidebar
+  const toggleSidebar = () => setIsMobileOpen(!isMobileOpen);
+
+  // Edit and process movement handlers
+  const handleEditMovimiento = (movimiento: MovimientoProcesoResultado) => {
+    // Implement edit logic
+    console.log("Editing movimiento:", movimiento);
   };
 
-  const handleMoveToNextProcess = (blockId: string) => {
-    moveToNextProcess(blockId); // Mover al siguiente proceso
+  const handleMoveToNextProcess = (movimiento: MovimientoProcesoResultado) => {
+    // Implement move to next process logic
+    console.log("Moving to next process:", movimiento);
+
+
+
+    // Potentially refresh movimientos or update local state
+    fetchMovimientos();
   };
-
-  const handleReceiveExternalOrder = (shippingId: string) => {
-    const shipping = shippingOrders.find(so => so.id === shippingId);
-    if (!shipping) return;
-
-    const newStatus = shipping.status === ShippingOrdeStatus.Pendiente
-      ? ShippingOrdeStatus.Transito
-      : ShippingOrdeStatus.Entregado;
-
-    updateShippingStatus(shippingId, newStatus);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusKey = status.toLowerCase().replace(' ', '_');
-    const { label, color } = BlockStatusLabels[statusKey as keyof typeof BlockStatusLabels] ||
-      { label: status, color: 'default' };
-
-    return <Badge variant={color as 'default' | 'destructive' | 'secondary' | 'outline'}>{label}</Badge>;
-  };
-
-
-
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <SideBar isMobileOpen={isMobileOpen} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 p-8 lg:ml-64">
-        {/* Fixed top bar */}
-        <div className="bg-background border-b z-10">
+      <div className="flex-1 p-8 lg:ml-64 transition-all duration-300 ease-in-out">
+        {/* Top Bar */}
+        <div className="bg-background border-b sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 w-full sm:w-auto">
                 <button onClick={toggleSidebar} className="lg:hidden p-2 rounded-lg hover:bg-accent">
                   <Menu className="h-6 w-6" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold">Producción</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Producción en la planta
+                  <h1 className="text-xl sm:text-2xl font-bold">Movimientos de Producción</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Seguimiento de procesos de producción
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                {/* Botón de escaneo actualizado */}
-                <Button
-                  variant={scanMode ? "default" : "outline"}
-                  size="icon"
-                  onClick={simulateScan}  // Cambiamos aquí
-                >
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
+                <TipoConfeccionSelector />
+                <Button variant="outline" size="icon" className="hidden sm:flex">
                   <QrCode className="h-5 w-5" />
                 </Button>
-
-                {/* Agrega el diálogo de escaneo */}
-                <Dialog open={showScanDialog} onOpenChange={setShowScanDialog}>
-                  <DialogContent>
-                    <BlockOperationDialog
-                      open={showScanDialog}
-                      onOpenChange={setShowScanDialog}
-                      title="Bloque Escaneado"
-                      block={scannedBlock}
-                      operators={operators}
-                      numberOfOperators={numberOfOperators}
-                      onNumberOfOperatorsChange={setNumberOfOperators}
-                      selectedOperators={selectedOperators}
-                      onSelectedOperatorsChange={setSelectedOperators}
-                      onSubprocessComplete={handleMoveToNextProcess}
-                      subprocessType={ProcessType.Interno}
-                    />
-                  </DialogContent>
-                </Dialog>
-
                 <Button variant="outline" size="icon">
                   <Filter className="h-5 w-5" />
                 </Button>
@@ -211,143 +341,185 @@ export default function ProductionPage() {
             {/* Search bar */}
             <div className="mt-4 flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Buscar por referencia o ID"
                   className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
           </div>
         </div>
 
-
-
         {/* Main content */}
-        <div className="container mx-auto px-4 pt-8">
+        <div className="container mx-auto px-2 sm:px-4 pt-4 sm:pt-8 max-w-full">
+          <Tabs
+            defaultValue="all"
+            className="space-y-4 sm:space-y-8"
+            onValueChange={(value) => setActiveTab(value)}
+          >
+            <div className="overflow-x-auto">
+              <TabsList className="flex w-full">
+                {procesosTabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm whitespace-nowrap">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-          <Tabs defaultValue="all" className="space-y-8">
-            <TabsList className="flex w-full overflow-x-auto">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {tabs.map((tab) => (
+            {procesosTabs.map((tab) => (
               <TabsContent key={tab.value} value={tab.value}>
-                <ScrollArea className="h-[calc(100vh-220px)]">
-                  <div className="space-y-4">
-                    {blocks // Cambiar mockBlocks por blocks
-                      .filter((block) => block.subprocesses.some(sp => sp.type === ProcessType.Interno))
-                      .filter((block) =>
-                        tab.value === 'all' ? true : processes.find(p => p.id === block.processId)?.name === tab.value
-                      ).filter(block => {
-                        // Verificar si el bloque está en un envío no entregado
-                        const isInPendingShipping = shippingOrders.some(so =>
-                          so.status !== 'Entregado' &&
-                          orders.some(o =>
-                            so.orderIds.includes(o.id) &&
-                            o.blockId === block.id
-                          )
-                        );
-                        return !isInPendingShipping;
-                      })
-
-                      .map((block) => (
+                <ScrollArea className="h-[calc(100vh-280px)] sm:h-[calc(100vh-270px)]">
+                  <div className="space-y-3 sm:space-y-4">
+                    {loading ? (
+                      <div className="flex items-center justify-center py-8 sm:py-12 gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        <span className="font-medium">Cargando bloques...</span>
+                      </div>
+                    ) : currentBlocks.length === 0 ? (
+                      <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                        <FolderX className="h-8 w-8 mx-auto mb-2" />
+                        No se encontraron bloques
+                      </div>
+                    ) : (
+                      currentBlocks.map((block) => (
                         <BlockCard
                           key={block.id}
-                          block={block}
-                          selectedBlocks={selectedBlocks}
-                          setSelectedBlocks={setSelectedBlocks}
-                          setEditingSubprocess={setEditingSubprocess}
-                          moveToNextProcess={handleMoveToNextProcess}
-                          processes={processes} // Asegúrate de tener las definiciones de procesos a mano
+                          bloque={block}
+                          isSelected={selectedBlocks.some(b => b.id === block.id)}
+                          onSelect={() => handleBlockSelection(block)}
+                          onEditSubproceso={(blockId, subprocesoId) => {
+                            console.log(`Editando subproceso ${subprocesoId} en bloque ${blockId}`);
+                            // Lógica para editar subproceso
+                          }}
+                          fetchBloques={fetchMovimientos}
                         />
-                      ))}
+                      ))
+                    )}
                   </div>
                 </ScrollArea>
+
+                {/* Pagination controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 sm:mt-6 pb-24 sm:pb-12">
+                  <div className="text-xs sm:text-sm text-muted-foreground order-3 sm:order-1">
+                    Mostrando {indexOfFirstBlock + 1}-{Math.min(indexOfLastBlock, totalBlocks)} de {totalBlocks} bloques
+                  </div>
+
+                  <div className="flex items-center space-x-2 order-1 sm:order-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    <div className="hidden sm:flex items-center space-x-1">
+                      {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                        let pageNum;
+
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Mobile pagination indicator */}
+                    <div className="sm:hidden text-sm font-medium">
+                      {currentPage} / {totalPages}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center space-x-2 order-2 sm:order-3">
+                    <span className="text-xs sm:text-sm">Por página:</span>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-16 h-8">
+                        <SelectValue placeholder={itemsPerPage.toString()} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[5, 10, 20, 50].map((num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </TabsContent>
             ))}
-            <EditTypeDialog
-              editingSubprocess={editingSubprocess}
-              setEditingSubprocess={setEditingSubprocess}
-              operators={operators} // Lista de operadores para el diálogo
-              selectedOperators={selectedOperators}
-              onSelectedOperatorsChange={setSelectedOperators}
-            />
           </Tabs>
         </div>
 
-
-        {/* Fixed bottom bar for batch operations */}
+        {/* Batch operation bottom bar */}
         {selectedBlocks.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-            <div className="container mx-auto flex items-center justify-between px-8">
-              <span className="text-sm">
-                {selectedBlocks.length} bloques seleccionados
+          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-3 sm:p-4 z-20">
+            <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-8">
+              <span className="text-xs sm:text-sm">
+                {selectedBlocks.length} {selectedBlocks.length === 1 ? "bloque seleccionado" : "bloques seleccionados"}
               </span>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault(); // Evita que el diálogo se abra automáticamente
-                      if (uniqueProcessIds.length === 1) {
-                        // Si todos los bloques son del mismo proceso, abre el diálogo principal
-                        setShowBlockDialog(true);
+              <Button
+                onClick={() => setIsDialogOpen(true)}
+                disabled={selectedBlocks.length === 0}
+                className="w-full sm:w-auto"
+              >
+                Registrar Operación
+              </Button>
+              
+              <BlockOperationDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                title="Registrar operación"
+                blocks={selectedBlocks}
+                operators={operators}
+                setSelectedBlocks={setSelectedBlocks}
+                fetchData={fetchMovimientos}
+              />
 
-                      } else {
-                        // Si no, muestra el modal de advertencia
-                        setShowWarningDialog(true);
-                      }
-                    }}
-                  >
-                    Registrar Operación
-                  </Button>
-                </DialogTrigger>
-
-
-              </Dialog>
-
-              <Dialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
-                <DialogContent>
-                  <BlockOperationDialog
-                    open={showBlockDialog}
-                    onOpenChange={setShowBlockDialog}
-                    title="Registrar Operación"
-                    block={selectedBlocksData}
-                    operators={operators}
-                    numberOfOperators={numberOfOperators}
-                    onNumberOfOperatorsChange={setNumberOfOperators}
-                    selectedOperators={selectedOperators}
-                    onSelectedOperatorsChange={setSelectedOperators}
-                    onSubprocessComplete={handleSubprocessComplete}
-                    subprocessType={ProcessType.Interno}
-                  />
-                </DialogContent>
-              </Dialog>
-              {/* Modal de advertencia */}
-              <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Advertencia</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <p>Los bloques seleccionados no pertenecen al mismo proceso.</p>
-                    <Button
-                      className="w-full"
-                      onClick={() => setShowWarningDialog(false)}
-                    >
-                      Cerrar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
           </div>
         )}
+
       </div>
-    </>
+    </div>
   );
 }

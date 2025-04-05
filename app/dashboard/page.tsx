@@ -19,8 +19,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-
+import { getEmpresaById } from "@/actions/empresa/crud-empresa";
+import { MovimientoProcesoResultado } from '../../interfaces/movproceso.interface';
+import { obtenerMovimientosPendientes } from '../../actions/procesoc/crud-movprocesoc';
 const mockData = {
   notifications: [
     {
@@ -240,6 +241,28 @@ export default function DashboardPage() {
     setProcesses(processes)
   }, []);
 
+  interface Empresa {
+    pro_codemp: string;
+    pro_nomemp: string;
+    pro_numruc: string;
+  }
+
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
+
+  useEffect(() => {
+    const fetchEmpresa = async () => {
+      try {
+        const data = await getEmpresaById("01");
+        setEmpresa(data);
+      } catch (error) {
+        console.error("Error fetching empresa:", error);
+      }
+    };
+
+    fetchEmpresa();
+  }, []);
+
+
 
   return (
     <>
@@ -257,11 +280,10 @@ export default function DashboardPage() {
               <div>
                 <h1 className="text-2xl font-bold">Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
-                  FOXATEL S.A.C.
+                  {empresa?.pro_nomemp}
                 </p>
               </div>
             </div>
-
 
 
             <div className="flex items-center gap-4">

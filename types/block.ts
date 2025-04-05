@@ -1,21 +1,24 @@
+import { MovimientoProcesoResultado } from '@/interfaces/movproceso.interface';
 import { SubProcess } from './process';
 
 // En types/block.ts
-export type Block = {
+export interface Block {
   id: string;
-  reference: string;
-  processId: string;
-  subprocesses: SubProcessStatus[];
-  quantity: number;
-  priority: "low" | "medium" | "high";
-  startDate: Date;
-  status: "Almacenado" | "Pendiente" | "En proceso" | "Completado";
-  currentShipping?: string;
-};
+  pro_codtic: string;
+  pro_codfol: string;
+  pro_numser: string;
+  pro_numdoc: string;
+  pro_itemov: number;
+  codigoProceso: string;
+  procesoActual: string;
+  procesoAnterior: string;
+  procesoPosterior?: string | null;
+  movimientos: MovimientoProcesoResultado[];
+}
 
 
 
-export enum ShippingOrdeStatus{
+export enum ShippingOrdeStatus {
   Pendiente = "Pendiente de recojo",
   Transito = "En tránsito",
   Entregado = "Entregado"
@@ -28,7 +31,7 @@ export type ShippingOrder = {
   transportProvider: string; // Transportista encargado
   departureDate?: Date; // Fecha de salida del transporte
   arrivalDate?: Date; // Fecha real de entrega
-  status: ShippingOrdeStatus; 
+  status: ShippingOrdeStatus;
 };
 
 
@@ -54,7 +57,7 @@ export type Operator = {
   name: string;
 };
 
-export enum BlockStatus{
+export enum BlockStatus {
   stored = "Almacenado",
   pending = "Pendiente",
   in_progress = "En proceso",

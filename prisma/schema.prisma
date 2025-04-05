@@ -1,124 +1,1725 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
+model pbcatcol {
+  pbc_tnam String  @db.VarChar(128)
+  pbc_tid  Int?
+  pbc_ownr String  @db.VarChar(128)
+  pbc_cnam String  @db.VarChar(128)
+  pbc_cid  Int?    @db.SmallInt
+  pbc_labl String? @db.VarChar(254)
+  pbc_lpos Int?    @db.SmallInt
+  pbc_hdr  String? @db.VarChar(254)
+  pbc_hpos Int?    @db.SmallInt
+  pbc_jtfy Int?    @db.SmallInt
+  pbc_mask String? @db.VarChar(31)
+  pbc_case Int?    @db.SmallInt
+  pbc_hght Int?    @db.SmallInt
+  pbc_wdth Int?    @db.SmallInt
+  pbc_ptrn String? @db.VarChar(31)
+  pbc_bmap String? @db.VarChar(1)
+  pbc_init String? @db.VarChar(254)
+  pbc_cmnt String? @db.VarChar(254)
+  pbc_edit String? @db.VarChar(31)
+  pbc_tag  String? @db.VarChar(254)
 
-
-// Empresa
-model Empresa {
-  id          Int      @id @default(autoincrement())
-  nombre      String
-  usuarios    Usuario[]
-  tiposConfeccion TipoConfeccion[]
+  @@unique([pbc_tnam, pbc_ownr, pbc_cnam], map: "pbcatc_x")
 }
 
-// Usuario y Roles
-model Usuario {
-  id          Int    @id @default(autoincrement())
-  nombre      String
-  email       String @unique
-  pasword     String
-  empresaId   Int
-  empresa     Empresa @relation(fields: [empresaId], references: [id])
-  roles       UsuarioRol[]
+model pbcatedt {
+  pbe_name String  @db.VarChar(30)
+  pbe_edit String? @db.VarChar(254)
+  pbe_type Int?    @db.SmallInt
+  pbe_cntr Int?
+  pbe_seqn Int     @db.SmallInt
+  pbe_flag Int?
+  pbe_work String? @db.VarChar(32)
+
+  @@unique([pbe_name, pbe_seqn], map: "pbcate_x")
 }
 
-model Rol {
-  id          Int    @id @default(autoincrement())
-  nombre      String
-  permisos    Permiso[]
-  usuarios    UsuarioRol[]
+model pbcatfmt {
+  pbf_name String  @unique(map: "pbcatf_x") @db.VarChar(30)
+  pbf_frmt String? @db.VarChar(254)
+  pbf_type Int?    @db.SmallInt
+  pbf_cntr Int?
 }
 
-model Permiso {
-  id          Int    @id @default(autoincrement())
-  nombre      String
-  roles       Rol[]
+model pbcattbl {
+  pbt_tnam String  @db.VarChar(128)
+  pbt_tid  Int?
+  pbt_ownr String  @db.VarChar(128)
+  pbd_fhgt Int?    @db.SmallInt
+  pbd_fwgt Int?    @db.SmallInt
+  pbd_fitl String? @db.VarChar(1)
+  pbd_funl String? @db.VarChar(1)
+  pbd_fchr Int?    @db.SmallInt
+  pbd_fptc Int?    @db.SmallInt
+  pbd_ffce String? @db.VarChar(18)
+  pbh_fhgt Int?    @db.SmallInt
+  pbh_fwgt Int?    @db.SmallInt
+  pbh_fitl String? @db.VarChar(1)
+  pbh_funl String? @db.VarChar(1)
+  pbh_fchr Int?    @db.SmallInt
+  pbh_fptc Int?    @db.SmallInt
+  pbh_ffce String? @db.VarChar(18)
+  pbl_fhgt Int?    @db.SmallInt
+  pbl_fwgt Int?    @db.SmallInt
+  pbl_fitl String? @db.VarChar(1)
+  pbl_funl String? @db.VarChar(1)
+  pbl_fchr Int?    @db.SmallInt
+  pbl_fptc Int?    @db.SmallInt
+  pbl_ffce String? @db.VarChar(18)
+  pbt_cmnt String? @db.VarChar(254)
+
+  @@unique([pbt_tnam, pbt_ownr], map: "pbcatt_x")
 }
 
-model UsuarioRol {
-  id       Int    @id @default(autoincrement())
-  usuarioId Int
-  rolId    Int
-  usuario  Usuario @relation(fields: [usuarioId], references: [id])
-  rol      Rol     @relation(fields: [rolId], references: [id])
+model pbcatvld {
+  pbv_name String  @unique(map: "pbcatv_x") @db.VarChar(30)
+  pbv_vald String? @db.VarChar(254)
+  pbv_type Int?    @db.SmallInt
+  pbv_cntr Int?
+  pbv_msg  String? @db.VarChar(254)
 }
 
-// Tipos de confección
-model TipoConfeccion {
-  id          Int    @id @default(autoincrement())
-  nombre      String
-  empresaId   Int
-  empresa     Empresa @relation(fields: [empresaId], references: [id])
-  procesos    Proceso[]
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B612B4A5C8F") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
 }
 
-model Proceso {
-  id            Int    @id @default(autoincrement())
-  nombre        String
-  tipoConfeccionId Int
-  tipoConfeccion TipoConfeccion @relation(fields: [tipoConfeccionId], references: [id])
-  subprocesos   Subproceso[]
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_accesos {
+  pro_sismen String @db.VarChar(Max)
+  pro_nommen String @db.VarChar(Max)
+  pro_venmen String @db.VarChar(Max)
+  pro_logusu String @db.VarChar(15)
+  pro_accmen String @db.VarChar(1)
+
+  @@ignore
 }
 
-model Subproceso {
-  id            Int    @id @default(autoincrement())
-  nombre        String
-  procesoId     Int
-  proceso       Proceso @relation(fields: [procesoId], references: [id])
-  porDefectoInterno Boolean
-  bloques       BloqueSubproceso[]
+model tb_almacen {
+  pro_codalm                String                      @id(map: "pk_almacen") @db.VarChar(3)
+  pro_nomalm                String                      @db.VarChar(80)
+  pro_diralm                String                      @db.VarChar(150)
+  pro_estalm                String                      @db.VarChar(15)
+  tb_movimiento_insumosc    tb_movimiento_insumosc[]
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+  tb_movimiento_ventac      tb_movimiento_ventac[]
+  tb_movimiento_ventad      tb_movimiento_ventad[]
+  tb_stock_insumos          tb_stock_insumos[]
+  tb_stock_mercaderia       tb_stock_mercaderia[]
+  tb_talonario_almacen      tb_talonario_almacen[]
 }
 
-model Bloque {
-  id          Int    @id @default(autoincrement())
-  nombre      String
-  subprocesos BloqueSubproceso[]
+model tb_anexo {
+  pro_codtia           String                 @db.VarChar(2)
+  pro_codane           String                 @db.VarChar(15)
+  pro_nomane           String                 @db.VarChar(150)
+  pro_estane           String                 @db.VarChar(15)
+  tb_movimiento_ventad tb_movimiento_ventad[]
 
-  OrdenEnvioBloque OrdenEnvioBloque[]
+  @@id([pro_codtia, pro_codane], map: "pk_anexo")
 }
 
-// Relación entre bloque y subprocesos
-model BloqueSubproceso {
-  id          Int    @id @default(autoincrement())
-  bloqueId    Int
-  subprocesoId Int
-  bloque      Bloque @relation(fields: [bloqueId], references: [id])
-  subproceso  Subproceso @relation(fields: [subprocesoId], references: [id])
-  tipoEjecucion String  // Puede ser "Interno" o "Externo"
+model tb_articulo {
+  pro_codtic           String                 @db.VarChar(15)
+  pro_codart           String                 @db.VarChar(50)
+  pro_nomart           String                 @db.VarChar(250)
+  pro_codcal           String                 @db.VarChar(15)
+  pro_coddis           String                 @db.VarChar(15)
+  pro_codpro           String                 @db.VarChar(15)
+  pro_codund           String                 @db.VarChar(15)
+  pro_preart           Decimal?               @db.Decimal(18, 4)
+  tb_calidad           tb_calidad             @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_articulo_calidad")
+  tb_diseno            tb_diseno              @relation(fields: [pro_codtic, pro_coddis], references: [pro_codtic, pro_coddis], onUpdate: NoAction, map: "fk_articulo_diseno")
+  tb_procedencia       tb_procedencia         @relation(fields: [pro_codtic, pro_codpro], references: [pro_codtic, pro_codpro], onUpdate: NoAction, map: "fk_articulo_procedencia")
+  tb_tipo_confeccion   tb_tipo_confeccion     @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_articulo_tipo_confeccion")
+  tb_unidad            tb_unidad              @relation(fields: [pro_codund], references: [pro_codund], onUpdate: NoAction, map: "fk_articulo_unidad")
+  tb_movimiento_rollod tb_movimiento_rollod[]
+  tb_parte_producciond tb_parte_producciond[]
+
+  @@id([pro_codtic, pro_codart], map: "pk_articulo")
 }
 
-// Transporte y seguimiento
-model OrdenEnvio {
-  id          Int    @id @default(autoincrement())
-  fechaSalida DateTime
-  bloques     OrdenEnvioBloque[]
-  seguimiento SeguimientoTransporte[]
+model tb_calidad {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_codcal                String                      @db.VarChar(15)
+  pro_nomcal                String                      @db.VarChar(80)
+  pro_estcal                String?                     @db.VarChar(10)
+  pro_codtim                String?                     @db.VarChar(3)
+  tb_articulo               tb_articulo[]
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_calidad_tipo_confeccion")
+  tb_colores_calidad        tb_colores_calidad[]
+  tb_colores_calidad_diseno tb_colores_calidad_diseno[]
+  tb_conteo_tienda          tb_conteo_tienda[]
+  tb_mercaderia             tb_mercaderia[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+  tb_parte_produccionc      tb_parte_produccionc[]
+
+  @@id([pro_codtic, pro_codcal], map: "pk_calidad")
 }
 
-model OrdenEnvioBloque {
-  id         Int    @id @default(autoincrement())
-  ordenEnvioId Int
-  bloqueId   Int
-  ordenEnvio OrdenEnvio @relation(fields: [ordenEnvioId], references: [id])
-  bloque     Bloque @relation(fields: [bloqueId], references: [id])
+model tb_calidad_diseno_color {
+  pro_codtic String  @db.VarChar(10)
+  pro_codcal String  @db.VarChar(10)
+  pro_coddis String  @db.VarChar(10)
+  pro_codcol String  @db.VarChar(10)
+  pro_canreq Decimal @db.Decimal(18, 2)
+  pro_stomin Decimal @db.Decimal(18, 2)
+
+  @@id([pro_codtic, pro_codcal, pro_coddis, pro_codcol], map: "pk_calidad_diseno_color")
 }
 
-model SeguimientoTransporte {
-  id         Int    @id @default(autoincrement())
-  ordenEnvioId Int
-  estado     String  // "Pendiente", "En tránsito", "Entregado", "Finalizado", "Regresado a planta"
-  fecha      DateTime @default(now())
-  ordenEnvio OrdenEnvio @relation(fields: [ordenEnvioId], references: [id])
+model tb_calidad_diseno_tipo_color {
+  pro_codtic String @db.VarChar(10)
+  pro_codcal String @db.VarChar(10)
+  pro_coddis String @db.VarChar(10)
+  pro_codtco String @db.VarChar(10)
+  pro_codcol String @db.VarChar(10)
+
+  @@id([pro_codtic, pro_codcal, pro_coddis, pro_codtco, pro_codcol], map: "pk_calidad_diseno_tipo_color")
+}
+
+model tb_cliente {
+  pro_codcli           String                 @id(map: "fk_cliente") @db.VarChar(15)
+  pro_nomcli           String                 @db.VarChar(150)
+  pro_codubi           String                 @db.VarChar(8)
+  pro_dircli           String                 @db.VarChar(250)
+  pro_telcli           String                 @db.VarChar(15)
+  pro_pagweb           String                 @db.VarChar(50)
+  pro_tipdoc           String                 @db.VarChar(10)
+  pro_numdoc           String                 @db.VarChar(15)
+  pro_concli           String                 @db.VarChar(50)
+  pro_contel           String                 @db.VarChar(15)
+  pro_conema           String                 @db.VarChar(50)
+  pro_estcli           String                 @db.VarChar(15)
+  pro_clipub           String?                @db.VarChar(1)
+  tb_ubigeo            tb_ubigeo              @relation(fields: [pro_codubi], references: [pro_codubi], onUpdate: NoAction, map: "fk_cliente_ubigeo")
+  tb_movimiento_ventac tb_movimiento_ventac[]
+  tb_movimiento_ventad tb_movimiento_ventad[]
+}
+
+model tb_colores {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_codcol                String                      @db.VarChar(15)
+  pro_nomcol                String                      @db.VarChar(80)
+  pro_hilcos                String?                     @db.VarChar(10)
+  pro_hilrem                String?                     @db.VarChar(10)
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_colores_tipo_confeccion")
+  tb_colores_calidad        tb_colores_calidad[]
+  tb_colores_calidad_diseno tb_colores_calidad_diseno[]
+  tb_conteo_tienda          tb_conteo_tienda[]
+  tb_mercaderia             tb_mercaderia[]
+  tb_movimiento_lavanderiad tb_movimiento_lavanderiad[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+  tb_movimiento_rollod      tb_movimiento_rollod[]
+  tb_parte_producciond      tb_parte_producciond[]
+
+  @@id([pro_codtic, pro_codcol], map: "pk_color")
+}
+
+model tb_colores_calidad {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codcal         String             @db.VarChar(15)
+  pro_codcol         String             @db.VarChar(15)
+  tb_calidad         tb_calidad         @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_colores_calidad_calidad")
+  tb_colores         tb_colores         @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_colores_calidad_color")
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_colores_calidad_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codcal, pro_codcol], map: "pk_colores_calidad")
+}
+
+model tb_colores_calidad_diseno {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codcal         String             @db.VarChar(15)
+  pro_codcol         String             @db.VarChar(15)
+  pro_coddis         String             @db.VarChar(15)
+  pro_mtsmin         Decimal            @db.Decimal(18, 2)
+  tb_calidad         tb_calidad         @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_colores_calidad_diseno_calidad")
+  tb_colores         tb_colores         @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_colores_calidad_diseno_colores")
+  tb_diseno          tb_diseno          @relation(fields: [pro_codtic, pro_coddis], references: [pro_codtic, pro_coddis], onUpdate: NoAction, map: "fk_colores_calidad_diseno_diseno")
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_colores_calidad_diseno_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codcal, pro_codcol, pro_coddis], map: "pk_colores_calidad_diseno")
+}
+
+model tb_colores_fabrica {
+  pro_codtic           String                 @db.VarChar(15)
+  pro_codcol           String                 @db.VarChar(15)
+  pro_nomcol           String                 @db.VarChar(80)
+  tb_tipo_confeccion   tb_tipo_confeccion     @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_colores_fabrica_tipo_confeccion")
+  tb_movimiento_rollod tb_movimiento_rollod[]
+
+  @@id([pro_codtic, pro_codcol], map: "pk_color_fabrica")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_configuracion_almacen {
+  pro_titepr                                                                   String               @db.VarChar(3)
+  pro_titsal                                                                   String               @db.VarChar(3)
+  pro_titeal                                                                   String               @db.VarChar(3)
+  pro_titsti                                                                   String               @db.VarChar(3)
+  pro_tittra                                                                   String?              @db.VarChar(3)
+  pro_titven                                                                   String?              @db.VarChar(3)
+  pro_titeti                                                                   String?              @db.VarChar(3)
+  tb_tipo_transaccion_tb_configuracion_almacen_pro_titetiTotb_tipo_transaccion tb_tipo_transaccion? @relation("tb_configuracion_almacen_pro_titetiTotb_tipo_transaccion", fields: [pro_titeti], references: [pro_codtit], onDelete: NoAction, onUpdate: NoAction, map: "fk_configuracion_almacen_titeti")
+  tb_tipo_transaccion_tb_configuracion_almacen_pro_tittraTotb_tipo_transaccion tb_tipo_transaccion? @relation("tb_configuracion_almacen_pro_tittraTotb_tipo_transaccion", fields: [pro_tittra], references: [pro_codtit], onDelete: NoAction, onUpdate: NoAction, map: "fk_configuracion_almacen_tittra")
+  tb_tipo_transaccion_tb_configuracion_almacen_pro_titvenTotb_tipo_transaccion tb_tipo_transaccion? @relation("tb_configuracion_almacen_pro_titvenTotb_tipo_transaccion", fields: [pro_titven], references: [pro_codtit], onDelete: NoAction, onUpdate: NoAction, map: "fk_configuracion_almacen_titven")
+
+  @@ignore
+}
+
+model tb_configuracion_produccion {
+  pro_codtic String      @id(map: "pk_configuracion_produccion") @db.VarChar(15)
+  pro_titing String      @db.VarChar(3)
+  pro_titsal String      @db.VarChar(3)
+  pro_titcor String      @db.VarChar(3)
+  pro_ultpro String      @db.VarChar(6)
+  pro_prolav String?     @db.VarChar(6)
+  tb_proceso tb_proceso? @relation(fields: [pro_codtic, pro_prolav], references: [pro_codtic, pro_codpro], onUpdate: NoAction, map: "fk_configuracion_produccion_prolceso_lav")
+
+  @@unique([pro_codtic, pro_prolav])
+}
+
+model tb_conteo_tienda {
+  pro_codptv    String        @db.VarChar(3)
+  pro_codtic    String        @db.VarChar(15)
+  pro_codcal    String        @db.VarChar(15)
+  pro_coddis    String        @db.VarChar(15)
+  pro_codtco    String        @db.VarChar(15)
+  pro_codtal    String        @db.VarChar(15)
+  pro_codcol    String        @db.VarChar(15)
+  pro_feccon    DateTime?     @db.Date
+  pro_cancon    Decimal?      @db.Decimal(18, 0)
+  tb_calidad    tb_calidad    @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_conteo_calidad")
+  tb_colores    tb_colores    @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_conteo_color")
+  tb_diseno     tb_diseno     @relation(fields: [pro_codtic, pro_coddis], references: [pro_codtic, pro_coddis], onUpdate: NoAction, map: "fk_conteo_diseno")
+  tb_talla      tb_talla      @relation(fields: [pro_codtic, pro_codtal], references: [pro_codtic, pro_codtal], onUpdate: NoAction, map: "fk_conteo_talla")
+  tb_tipo_corte tb_tipo_corte @relation(fields: [pro_codtic, pro_codtco], references: [pro_codtic, pro_codtco], onUpdate: NoAction, map: "fk_conteo_tipo_corte")
+
+  @@id([pro_codptv, pro_codtic, pro_codcal, pro_coddis, pro_codtco, pro_codtal, pro_codcol], map: "pk_conteo_tienda")
+}
+
+model tb_correlativo_formato {
+  pro_numcor Int @id(map: "pk_correlativo_formato")
+}
+
+model tb_ctacte {
+  pro_numcta       String           @id(map: "pk_ctacte") @db.VarChar(25)
+  pro_tipmon       String           @default("MN", map: "DF__tb_ctacte__pro_t__0C85DE4D") @db.VarChar(2)
+  pro_codcue       String           @db.VarChar(20)
+  pro_cajban       String           @default("C", map: "DF__tb_ctacte__pro_c__0D7A0286") @db.VarChar(1)
+  pro_descta       String           @db.VarChar(50)
+  pro_codtid       String           @db.VarChar(3)
+  pro_estcta       String           @db.VarChar(15)
+  tb_plan_contable tb_plan_contable @relation(fields: [pro_codcue], references: [pro_codcue], onUpdate: NoAction, map: "fk_ctacte_plan_contable")
+}
+
+model tb_diseno {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_coddis                String                      @db.VarChar(15)
+  pro_nomdis                String                      @db.VarChar(80)
+  tb_articulo               tb_articulo[]
+  tb_colores_calidad_diseno tb_colores_calidad_diseno[]
+  tb_conteo_tienda          tb_conteo_tienda[]
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_diseno_tipo_confeccion")
+  tb_mercaderia             tb_mercaderia[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+
+  @@id([pro_codtic, pro_coddis], map: "pk_diseno")
+}
+
+model tb_empresa {
+  pro_codemp           String                 @id(map: "pk_empresa") @db.VarChar(2)
+  pro_nomemp           String                 @db.VarChar(80)
+  pro_numruc           String                 @db.VarChar(11)
+  tb_movimiento_rolloc tb_movimiento_rolloc[]
+}
+
+model tb_familia {
+  pro_codfam     String           @id(map: "pk_familia") @db.VarChar(10)
+  pro_nomfam     String           @db.VarChar(50)
+  tb_mercaderia2 tb_mercaderia2[]
+}
+
+model tb_folder {
+  pro_codtic                       String                             @db.VarChar(15)
+  pro_codfol                       String                             @db.VarChar(15)
+  pro_nomfol                       String                             @db.VarChar(80)
+  tb_tipo_confeccion               tb_tipo_confeccion                 @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_folder_tipo_confeccion")
+  tb_folder_numeracion             tb_folder_numeracion[]
+  tb_parte_produccionc             tb_parte_produccionc[]
+  tb_subproceso_ingreso_produccion tb_subproceso_ingreso_produccion[]
+
+  @@id([pro_codtic, pro_codfol], map: "pk_folder")
+}
+
+model tb_folder_numeracion {
+  pro_codtic String    @db.VarChar(15)
+  pro_codfol String    @db.VarChar(15)
+  pro_serdoc String    @db.VarChar(15)
+  pro_numdoc String    @db.VarChar(15)
+  tb_folder  tb_folder @relation(fields: [pro_codtic, pro_codfol], references: [pro_codtic, pro_codfol], onUpdate: NoAction, map: "fk_folder_numeracion_folder")
+
+  @@id([pro_codtic, pro_codfol, pro_serdoc], map: "pk_folder_numeracion")
+}
+
+model tb_forma_pago {
+  pro_codfpa                String                      @id(map: "pk_forma_pago") @db.VarChar(3)
+  pro_nomfpa                String                      @db.VarChar(50)
+  pro_docpag                String                      @db.VarChar(1)
+  pro_booven                String                      @default("N", map: "DF__tb_forma___pro_b__0BB1B5A5") @db.VarChar(1)
+  pro_boocom                String                      @default("N", map: "DF__tb_forma___pro_b__0CA5D9DE") @db.VarChar(1)
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac[]
+  tb_movimiento_ventac      tb_movimiento_ventac[]
+}
+
+model tb_gasto {
+  pro_codgas                String                      @id(map: "pk_gasto") @db.VarChar(15)
+  pro_nomgas                String                      @db.VarChar(80)
+  pro_mongas                Decimal                     @db.Decimal(18, 2)
+  tb_movimiento_rollo_gasto tb_movimiento_rollo_gasto[]
+}
+
+model tb_insumos {
+  pro_codtic             String                   @db.VarChar(15)
+  pro_codins             String                   @db.VarChar(20)
+  pro_nomins             String                   @db.VarChar(100)
+  pro_codpro             String                   @db.VarChar(6)
+  pro_preins             Decimal                  @db.Decimal(18, 2)
+  pro_codund             String                   @db.VarChar(15)
+  pro_codica             String                   @db.VarChar(3)
+  pro_coditi             String                   @db.VarChar(3)
+  pro_codinu             String?                  @db.VarChar(10)
+  pro_codcol             String?                  @db.VarChar(3)
+  pro_nommos             String?                  @db.VarChar(150)
+  tb_insumos_categoria   tb_insumos_categoria     @relation(fields: [pro_codtic, pro_codica], references: [pro_codtic, pro_codica], onUpdate: NoAction, map: "fk_insumos_categoria")
+  tb_insumos_colores     tb_insumos_colores?      @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codico], onUpdate: NoAction, map: "fk_insumos_insumos_color")
+  tb_insumos_numero      tb_insumos_numero?       @relation(fields: [pro_codtic, pro_codinu], references: [pro_codtic, pro_codinu], onUpdate: NoAction, map: "fk_insumos_numero")
+  tb_insumos_tipo        tb_insumos_tipo          @relation(fields: [pro_codtic, pro_coditi], references: [pro_codtic, pro_coditi], onUpdate: NoAction, map: "fk_insumos_tipo")
+  tb_movimiento_insumosd tb_movimiento_insumosd[]
+  tb_requerimientod      tb_requerimientod[]
+  tb_stock_insumos       tb_stock_insumos[]
+
+  @@id([pro_codtic, pro_codins], map: "pk_insumos")
+}
+
+model tb_insumos_categoria {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codica         String             @db.VarChar(3)
+  pro_nomica         String             @db.VarChar(50)
+  tb_insumos         tb_insumos[]
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_insumos_categoria_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codica], map: "pk_insumos_categoria")
+}
+
+model tb_insumos_colores {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codico         String             @db.VarChar(3)
+  pro_nomico         String             @db.VarChar(50)
+  tb_insumos         tb_insumos[]
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_insumos_colores_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codico], map: "pk_insumos_colores")
+}
+
+model tb_insumos_numero {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codinu         String             @db.VarChar(10)
+  pro_nominu         String             @db.VarChar(50)
+  tb_insumos         tb_insumos[]
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_insumos_numero_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codinu], map: "pk_insumos_numero")
+}
+
+model tb_insumos_tipo {
+  pro_codtic         String             @db.VarChar(15)
+  pro_coditi         String             @db.VarChar(3)
+  pro_nomiti         String             @db.VarChar(50)
+  tb_insumos         tb_insumos[]
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_insumos_tipo_tipo_confeccion")
+
+  @@id([pro_codtic, pro_coditi], map: "pk_insumos_tipo")
+}
+
+model tb_menu {
+  pro_codmen  String @id(map: "pk_menu") @db.VarChar(35)
+  pro_nommen  String @db.VarChar(80)
+  pro_levmen  Int    @default(0, map: "DF__tb_menu__pro_lev__6C190EBB")
+  pro_levmen1 Int    @default(0, map: "DF__tb_menu__pro_lev__6D0D32F4")
+  pro_levmen2 Int    @default(0, map: "DF__tb_menu__pro_lev__6E01572D")
+  pro_levmen3 Int    @default(0, map: "DF__tb_menu__pro_lev__6EF57B66")
+  pro_ordmen  Int
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_menu_maestros {
+  pro_grumen String   @db.VarChar(Max)
+  pro_nommen String   @db.VarChar(Max)
+  pro_venmen String   @db.VarChar(Max)
+  pro_tabmen String   @db.VarChar(Max)
+  pro_filmen String   @db.VarChar(Max)
+  pro_ordmen Decimal? @db.Decimal(18, 0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_menu_sistemas {
+  pro_sismen String   @db.VarChar(Max)
+  pro_nommen String   @db.VarChar(Max)
+  pro_venmen String   @db.VarChar(Max)
+  pro_ordmen Decimal? @db.Decimal(18, 0)
+
+  @@ignore
+}
+
+model tb_mercaderia {
+  pro_codtic                   String                         @db.VarChar(15)
+  pro_codmer                   String                         @db.VarChar(30)
+  pro_nommer                   String                         @db.VarChar(250)
+  pro_codcal                   String                         @db.VarChar(15)
+  pro_coddis                   String                         @db.VarChar(15)
+  pro_codtco                   String                         @db.VarChar(15)
+  pro_codtal                   String                         @db.VarChar(15)
+  pro_codcol                   String                         @db.VarChar(15)
+  pro_preart                   Decimal?                       @db.Decimal(18, 4)
+  pro_codme2                   String?                        @db.VarChar(100)
+  pro_estart                   String?                        @db.VarChar(15)
+  pro_boosto                   String                         @default("S", map: "DF__tb_mercad__pro_b__21A0F6C4") @db.VarChar(1)
+  pro_cosart                   Decimal?                       @db.Decimal(18, 2)
+  pro_preart_2                 Decimal?                       @db.Decimal(18, 2)
+  pro_preart_3                 Decimal?                       @db.Decimal(18, 2)
+  pro_preart_4                 Decimal?                       @db.Decimal(18, 0)
+  pro_nomme2                   String?                        @db.VarChar(100)
+  tb_calidad                   tb_calidad                     @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_mercaderia_calidad")
+  tb_colores                   tb_colores                     @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_mercaderia_color")
+  tb_diseno                    tb_diseno                      @relation(fields: [pro_codtic, pro_coddis], references: [pro_codtic, pro_coddis], onUpdate: NoAction, map: "fk_mercaderia_diseno")
+  tb_talla                     tb_talla                       @relation(fields: [pro_codtic, pro_codtal], references: [pro_codtic, pro_codtal], onUpdate: NoAction, map: "fk_mercaderia_talla")
+  tb_tipo_corte                tb_tipo_corte                  @relation(fields: [pro_codtic, pro_codtco], references: [pro_codtic, pro_codtco], onUpdate: NoAction, map: "fk_mercaderia_tipo_corte")
+  tb_movimiento_mercaderiad    tb_movimiento_mercaderiad[]
+  tb_movimiento_mercaderiad223 tb_movimiento_mercaderiad223[]
+  tb_movimiento_procesoc       tb_movimiento_procesoc[]
+  tb_stock_mercaderia2         tb_stock_mercaderia2[]
+
+  @@id([pro_codtic, pro_codmer], map: "pk_mercaderia")
+  @@index([pro_estart, pro_boosto], map: "idx_kardex_venta1")
+  @@index([pro_codtic, pro_codcal, pro_coddis, pro_codtco], map: "idx_tipo_conf_mercaderia_movimientod_2")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_mercaderia_ok {
+  pro_codtic String   @db.VarChar(15)
+  pro_codmer String   @db.VarChar(30)
+  pro_nommer String?  @db.VarChar(500)
+  pro_codcal String   @db.VarChar(15)
+  pro_coddis String   @db.VarChar(15)
+  pro_codtco String   @db.VarChar(15)
+  pro_codtal String   @db.VarChar(15)
+  pro_codcol String   @db.VarChar(15)
+  pro_preart Decimal? @db.Decimal(18, 2)
+
+  @@ignore
+}
+
+model tb_mercaderia2 {
+  pro_codme2       String           @id(map: "pk_mercaderia2") @db.VarChar(10)
+  pro_nomme2       String           @db.VarChar(80)
+  pro_codtip       String           @db.VarChar(3)
+  pro_codfam       String           @db.VarChar(10)
+  pro_codsub       String           @db.VarChar(10)
+  pro_codund       String           @db.VarChar(15)
+  pro_preart1      Decimal          @db.Decimal(18, 2)
+  pro_preart2      Decimal          @db.Decimal(18, 2)
+  pro_catme2       String           @default("C", map: "DF__tb_mercad__pro_c__1DB06A4F") @db.VarChar(1)
+  pro_estme2       String           @db.VarChar(15)
+  pro_boosto       String           @db.VarChar(1)
+  tb_familia       tb_familia       @relation(fields: [pro_codfam], references: [pro_codfam], onUpdate: NoAction, map: "fk_mercaderia2_familia")
+  tb_subfamilia    tb_subfamilia    @relation(fields: [pro_codsub], references: [pro_codsub], onUpdate: NoAction, map: "fk_mercaderia2_subfamilia")
+  tb_tipo_producto tb_tipo_producto @relation(fields: [pro_codtip], references: [pro_codtip], onUpdate: NoAction, map: "fk_mercaderia2_tipo_producto")
+  tb_unidad        tb_unidad        @relation(fields: [pro_codund], references: [pro_codund], onUpdate: NoAction, map: "fk_mercaderia2_unidad_medida")
+}
+
+model tb_motivo_falla {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codmof         String             @db.VarChar(15)
+  pro_nommof         String             @db.VarChar(50)
+  pro_codpro         String             @db.VarChar(6)
+  tb_proceso         tb_proceso         @relation(fields: [pro_codtic, pro_codpro], references: [pro_codtic, pro_codpro], onUpdate: NoAction, map: "fk_motivo_falla_proceso")
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_motivo_falla_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codmof], map: "pk_motivo_falla")
+}
+
+model tb_motivo_traslado {
+  pro_codmot String @id(map: "pk_motivo_traslado") @db.VarChar(2)
+  pro_nommot String @db.VarChar(30)
+}
+
+model tb_movimiento_insumosc {
+  pro_codalm             String                   @db.VarChar(3)
+  pro_codtid             String                   @db.VarChar(3)
+  pro_numser             String                   @db.VarChar(10)
+  pro_numdoc             String                   @db.VarChar(10)
+  pro_codtit             String                   @db.VarChar(3)
+  pro_fecmov             DateTime                 @db.Date
+  pro_codtia             String                   @db.VarChar(2)
+  pro_codane             String                   @db.VarChar(15)
+  pro_glomov             String                   @db.VarChar(100)
+  pro_sergui             String                   @db.VarChar(10)
+  pro_numgui             String                   @db.VarChar(10)
+  pro_numref             String                   @db.VarChar(10)
+  pro_estmov             String                   @db.VarChar(15)
+  pro_codres             String                   @db.VarChar(15)
+  pro_modmov             String                   @db.VarChar(20)
+  tb_almacen             tb_almacen               @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_movimiento_insumod_almacen")
+  tb_tipo_documento      tb_tipo_documento        @relation(fields: [pro_codtid], references: [pro_codtid], onUpdate: NoAction, map: "fk_movimiento_insumod_tipo_doc")
+  tb_tipo_transaccion    tb_tipo_transaccion      @relation(fields: [pro_codtit], references: [pro_codtit], onUpdate: NoAction, map: "fk_movimiento_insumod_tipo_transaccion")
+  tb_movimiento_insumosd tb_movimiento_insumosd[]
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc], map: "pk_movimiento_insumoc")
+}
+
+model tb_movimiento_insumosd {
+  pro_codalm             String                 @db.VarChar(3)
+  pro_codtid             String                 @db.VarChar(3)
+  pro_numser             String                 @db.VarChar(10)
+  pro_numdoc             String                 @db.VarChar(10)
+  pro_itemov             Decimal                @db.Decimal(18, 0)
+  pro_es                 String                 @db.VarChar(1)
+  pro_canmov             Decimal                @db.Decimal(18, 2)
+  pro_codtic             String                 @db.VarChar(15)
+  pro_codins             String                 @db.VarChar(20)
+  pro_codund             String                 @db.VarChar(15)
+  pro_premov             Decimal                @db.Decimal(18, 4)
+  pro_impmov             Decimal                @db.Decimal(18, 4)
+  pro_serreq             String?                @db.VarChar(5)
+  pro_numreq             String?                @db.VarChar(15)
+  pro_itereq             Decimal?               @db.Decimal(18, 0)
+  pro_factor             Decimal?               @db.Decimal(18, 2)
+  pro_cankar             Decimal?               @db.Decimal(18, 2)
+  tb_insumos             tb_insumos             @relation(fields: [pro_codtic, pro_codins], references: [pro_codtic, pro_codins], onUpdate: NoAction, map: "fk_insumos_movimiento_insumosd")
+  tb_movimiento_insumosc tb_movimiento_insumosc @relation(fields: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], references: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_insumod_movimiento_insumoc")
+  tb_unidad              tb_unidad              @relation(fields: [pro_codund], references: [pro_codund], onUpdate: NoAction, map: "fk_movimiento_insumod_unidad_medida")
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_insumod")
+}
+
+model tb_movimiento_lavanderiac {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_numser                String                      @db.VarChar(15)
+  pro_numdoc                String                      @db.VarChar(15)
+  pro_folmes                String                      @db.VarChar(15)
+  pro_sermes                String                      @db.VarChar(15)
+  pro_nummes                String                      @db.VarChar(15)
+  pro_fecdoc                DateTime                    @db.DateTime
+  pro_codper                String                      @db.VarChar(15)
+  pro_labtal1               String                      @db.VarChar(4)
+  pro_labtal2               String                      @db.VarChar(4)
+  pro_labtal3               String                      @db.VarChar(4)
+  pro_labtal4               String                      @db.VarChar(4)
+  pro_labtal5               String                      @db.VarChar(4)
+  pro_labtal6               String                      @db.VarChar(4)
+  pro_textal1               Decimal                     @db.Decimal(18, 0)
+  pro_textal2               Decimal                     @db.Decimal(18, 0)
+  pro_textal3               Decimal                     @db.Decimal(18, 0)
+  pro_textal4               Decimal                     @db.Decimal(18, 0)
+  pro_textal5               Decimal                     @db.Decimal(18, 0)
+  pro_textal6               Decimal                     @db.Decimal(18, 0)
+  pro_labad1                String                      @db.VarChar(4)
+  pro_labad2                String                      @db.VarChar(4)
+  pro_labad3                String                      @db.VarChar(4)
+  pro_glomov                String                      @db.VarChar(250)
+  pro_estmov                String                      @db.VarChar(15)
+  pro_codtia                String?                     @db.VarChar(2)
+  pro_codane                String?                     @db.VarChar(15)
+  pro_codcal                String?                     @db.VarChar(15)
+  pro_codtco                String?                     @db.VarChar(15)
+  pro_fecter                DateTime?                   @db.Date
+  tb_parte_produccionc      tb_parte_produccionc        @relation(fields: [pro_codtic, pro_folmes, pro_sermes, pro_nummes], references: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_lavanderiac_parte_produccionc")
+  tb_movimiento_lavanderiad tb_movimiento_lavanderiad[]
+
+  @@id([pro_codtic, pro_numser, pro_numdoc], map: "pk_movimiento_lavanderiac")
+}
+
+model tb_movimiento_lavanderiad {
+  pro_codtic                String                    @db.VarChar(15)
+  pro_numser                String                    @db.VarChar(15)
+  pro_numdoc                String                    @db.VarChar(15)
+  pro_itedoc                Decimal                   @db.Decimal(18, 0)
+  pro_codcol                String                    @db.VarChar(15)
+  pro_canta1                Decimal                   @db.Decimal(18, 0)
+  pro_canta2                Decimal                   @db.Decimal(18, 0)
+  pro_canta3                Decimal                   @db.Decimal(18, 0)
+  pro_canta4                Decimal                   @db.Decimal(18, 0)
+  pro_canta5                Decimal                   @db.Decimal(18, 0)
+  pro_canta6                Decimal                   @db.Decimal(18, 0)
+  pro_canad1                Decimal?                  @db.Decimal(18, 2)
+  pro_canad2                Decimal?                  @db.Decimal(18, 2)
+  pro_canad3                Decimal?                  @db.Decimal(18, 2)
+  pro_codtil                String?                   @db.VarChar(3)
+  tb_colores                tb_colores                @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_movimiento_lavanderiad_colores")
+  tb_movimiento_lavanderiac tb_movimiento_lavanderiac @relation(fields: [pro_codtic, pro_numser, pro_numdoc], references: [pro_codtic, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_lavanderiad_movimiento_lavanderiac")
+  tb_tipo_lavado            tb_tipo_lavado?           @relation(fields: [pro_codtic, pro_codtil], references: [pro_codtic, pro_codtil], onUpdate: NoAction, map: "fk_movimiento_lavanderiad_tipo_lavado")
+
+  @@id([pro_codtic, pro_numser, pro_numdoc, pro_itedoc], map: "pk_movimiento_lavanderiad")
+}
+
+model tb_movimiento_mercaderiac {
+  pro_codalm                       String                             @db.VarChar(3)
+  pro_codtid                       String                             @db.VarChar(3)
+  pro_numser                       String                             @db.VarChar(15)
+  pro_numdoc                       String                             @db.VarChar(15)
+  pro_codtit                       String                             @db.VarChar(3)
+  pro_fecmov                       DateTime                           @db.DateTime
+  pro_codper                       String                             @db.VarChar(15)
+  pro_codtia                       String                             @db.VarChar(2)
+  pro_codane                       String                             @db.VarChar(15)
+  pro_glomov                       String                             @db.VarChar(150)
+  pro_almref                       String?                            @db.VarChar(50)
+  pro_serref                       String                             @db.VarChar(15)
+  pro_numref                       String                             @db.VarChar(15)
+  pro_estmov                       String                             @db.VarChar(15)
+  pro_codptv                       String                             @db.VarChar(3)
+  pro_modmov                       String?                            @db.VarChar(25)
+  pro_codfpa                       String                             @db.VarChar(3)
+  pro_fecref                       DateTime?                          @db.Date
+  tb_almacen                       tb_almacen                         @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_movimiento_mercaderiac_almacen")
+  tb_forma_pago                    tb_forma_pago                      @relation(fields: [pro_codfpa], references: [pro_codfpa], onUpdate: NoAction, map: "fk_movimiento_mercaderiac_forma_pago")
+  tb_personal                      tb_personal                        @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_movimiento_mercaderiac_personal")
+  tb_tipo_transaccion              tb_tipo_transaccion                @relation(fields: [pro_codtit], references: [pro_codtit], onUpdate: NoAction, map: "fk_movimiento_mercaderiac_tipo_transaccion")
+  tb_movimiento_mercaderiad        tb_movimiento_mercaderiad[]
+  tb_movimiento_mercaderiad223     tb_movimiento_mercaderiad223[]
+  tb_subproceso_ingreso_produccion tb_subproceso_ingreso_produccion[]
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc], map: "pk_movimiento_mercaderiac")
+  @@index([pro_modmov, pro_fecmov, pro_estmov], map: "idx_vta1")
+}
+
+model tb_movimiento_mercaderiad {
+  pro_codalm                String                    @db.VarChar(3)
+  pro_codtid                String                    @db.VarChar(3)
+  pro_numser                String                    @db.VarChar(15)
+  pro_numdoc                String                    @db.VarChar(15)
+  pro_itemov                Decimal                   @db.Decimal(18, 0)
+  pro_codmer                String                    @db.VarChar(30)
+  pro_nommer                String                    @db.VarChar(250)
+  pro_canmer                Decimal                   @db.Decimal(18, 0)
+  pro_premer                Decimal                   @db.Decimal(18, 2)
+  pro_totmer                Decimal                   @db.Decimal(18, 2)
+  pro_codtic                String                    @db.VarChar(15)
+  pro_folmes                String                    @db.VarChar(15)
+  pro_sermes                String                    @db.VarChar(15)
+  pro_nummes                String                    @db.VarChar(15)
+  pro_itemes                Decimal                   @db.Decimal(18, 0)
+  pro_promes                String                    @db.VarChar(6)
+  pro_almref                String                    @db.VarChar(3)
+  pro_tipref                String                    @db.VarChar(3)
+  pro_serref                String?                   @db.VarChar(15)
+  pro_numref                String?                   @db.VarChar(15)
+  pro_iteref                Decimal?                  @db.Decimal(18, 0)
+  pro_cancom                Decimal                   @db.Decimal(18, 0)
+  pro_canfal                Decimal?                  @db.Decimal(18, 0)
+  pro_codmof                String?                   @db.VarChar(15)
+  tb_mercaderia             tb_mercaderia             @relation(fields: [pro_codtic, pro_codmer], references: [pro_codtic, pro_codmer], onUpdate: NoAction, map: "fk_movimiento_mercaderiad_mercaderia2")
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac @relation(fields: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], references: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_mercaderiad_mercaderiac2")
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_mercaderiad2")
+  @@index([pro_codtic], map: "idxrequerimiento1")
+}
+
+model tb_movimiento_mercaderiad223 {
+  pro_codalm                String                    @db.VarChar(3)
+  pro_codtid                String                    @db.VarChar(3)
+  pro_numser                String                    @db.VarChar(15)
+  pro_numdoc                String                    @db.VarChar(15)
+  pro_itemov                Decimal                   @db.Decimal(18, 0)
+  pro_codmer                String                    @db.VarChar(30)
+  pro_nommer                String                    @db.VarChar(250)
+  pro_canmer                Decimal                   @db.Decimal(18, 0)
+  pro_premer                Decimal                   @db.Decimal(18, 2)
+  pro_totmer                Decimal                   @db.Decimal(18, 2)
+  pro_codtic                String                    @db.VarChar(15)
+  pro_folmes                String                    @db.VarChar(15)
+  pro_sermes                String                    @db.VarChar(15)
+  pro_nummes                String                    @db.VarChar(15)
+  pro_itemes                Decimal                   @db.Decimal(18, 0)
+  pro_promes                String                    @db.VarChar(6)
+  pro_almref                String                    @db.VarChar(3)
+  pro_tipref                String                    @db.VarChar(3)
+  pro_serref                String?                   @db.VarChar(15)
+  pro_numref                String?                   @db.VarChar(15)
+  pro_iteref                Decimal?                  @db.Decimal(18, 0)
+  pro_cancom                Decimal                   @db.Decimal(18, 0)
+  pro_canfal                Decimal?                  @db.Decimal(18, 0)
+  pro_codmof                String?                   @db.VarChar(15)
+  tb_mercaderia             tb_mercaderia             @relation(fields: [pro_codtic, pro_codmer], references: [pro_codtic, pro_codmer], onUpdate: NoAction, map: "fk_movimiento_mercaderiad_mercaderia")
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac @relation(fields: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], references: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_mercaderiad_mercaderiac")
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_mercaderiad")
+  @@index([pro_codmer, pro_codtic], map: "idx_tipo_conf_mercaderia_movimientod")
+  @@index([pro_codtic], map: "idx_tipo_conf_mercaderia_movimientod_3")
+}
+
+model tb_movimiento_procesoc {
+  pro_codtic           String               @db.VarChar(15)
+  pro_codfol           String               @db.VarChar(15)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_codpro           String               @db.VarChar(6)
+  pro_codrol           String               @db.VarChar(15)
+  pro_codart           String               @db.VarChar(30)
+  pro_fecmov           DateTime             @db.DateTime
+  pro_codper           String               @db.VarChar(15)
+  pro_canpro           Decimal              @db.Decimal(18, 0)
+  pro_cospro           Decimal              @db.Decimal(18, 2)
+  pro_proter           String               @db.VarChar(1)
+  pro_codcal           String               @db.VarChar(15)
+  pro_coddis           String               @db.VarChar(15)
+  pro_codtco           String               @db.VarChar(15)
+  pro_codtal           String               @db.VarChar(15)
+  pro_codcol           String               @db.VarChar(15)
+  pro_fecter           DateTime             @db.DateTime
+  pro_codalm           String               @db.VarChar(3)
+  pro_seralm           String?              @db.VarChar(15)
+  pro_numalm           String?              @db.VarChar(15)
+  codigo_merca         String?              @db.VarChar(500)
+  pro_cancom           Decimal?             @db.Decimal(18, 0)
+  pro_codproa          String?              @db.VarChar(6)
+  pro_procur           String?              @db.VarChar(1)
+  pro_grumes           String?              @db.VarChar(10)
+  pro_perpro           String?              @db.VarChar(50)
+  pro_fecpro           DateTime?            @db.Date
+  pro_priori           String?              @default("N", map: "DF__tb_movimi__pro_p__0EE3280B") @db.VarChar(1)
+  tb_almacen           tb_almacen           @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_movimiento_procesoc_almacen")
+  tb_calidad           tb_calidad           @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_movimiento_procesoc_calidad")
+  tb_colores           tb_colores           @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_movimiento_procesoc_color")
+  tb_diseno            tb_diseno            @relation(fields: [pro_codtic, pro_coddis], references: [pro_codtic, pro_coddis], onUpdate: NoAction, map: "fk_movimiento_procesoc_diseno")
+  tb_mercaderia        tb_mercaderia        @relation(fields: [pro_codtic, pro_codart], references: [pro_codtic, pro_codmer], onUpdate: NoAction, map: "fk_movimiento_procesoc_mercaderia")
+  tb_parte_produccionc tb_parte_produccionc @relation(fields: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], references: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_procesoc_parte_produccionc")
+  tb_personal          tb_personal          @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_movimiento_procesoc_personal")
+  tb_proceso           tb_proceso           @relation(fields: [pro_codtic, pro_codpro], references: [pro_codtic, pro_codpro], onUpdate: NoAction, map: "fk_movimiento_procesoc_proceso")
+  tb_talla             tb_talla             @relation(fields: [pro_codtic, pro_codtal], references: [pro_codtic, pro_codtal], onUpdate: NoAction, map: "fk_movimiento_procesoc_talla")
+  tb_tipo_corte        tb_tipo_corte        @relation(fields: [pro_codtic, pro_codtco], references: [pro_codtic, pro_codtco], onUpdate: NoAction, map: "fk_movimiento_procesoc_tipo_corte")
+
+  @@id([pro_codtic, pro_codfol, pro_numser, pro_numdoc, pro_itemov, pro_codpro, pro_codart], map: "pk_movimiento_procesoc")
+  @@index([pro_codtic, pro_codpro, pro_proter, pro_codtco, pro_fecter], map: "idx_externos1")
+  @@index([pro_codtic, pro_codpro, pro_proter, pro_codtco, pro_fecter], map: "idx_externos2")
+  @@index([pro_codtic, pro_codpro, pro_proter, pro_codtco, pro_fecter], map: "idx_externos3")
+  @@index([pro_codtic, pro_codpro, pro_codper, pro_proter, pro_codtco, pro_fecter], map: "idx_externos4")
+  @@index([pro_codfol, pro_numser, pro_numdoc, pro_grumes], map: "idx_movproceso")
+  @@index([pro_codtic, pro_proter, pro_codcal, pro_coddis, pro_codcol], map: "idx_stock_consolidado1")
+  @@index([pro_codtic, pro_proter], map: "idx_udf_proceso_cantidad")
+  @@index([pro_codtic, pro_codfol, pro_numser, pro_numdoc, pro_itemov, pro_codart, pro_fecmov], map: "idx_udf_proceso_cantidad_fecha")
+  @@index([pro_codpro], map: "idx_udf_proceso_fecha")
+  @@index([pro_fecmov], map: "idx_udf_proceso_fecha_2")
+}
+
+model tb_movimiento_procesod {
+  pro_codtic           String               @db.VarChar(15)
+  pro_codfol           String               @db.VarChar(15)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_codpro           String               @db.VarChar(6)
+  pro_codsup           String               @db.VarChar(6)
+  pro_codper           String               @db.VarChar(15)
+  pro_fecsup           DateTime             @db.DateTime
+  pro_cospro           Decimal              @db.Decimal(18, 2)
+  pro_grumes           String?              @db.VarChar(10)
+  pro_fecini           DateTime?            @db.DateTime
+  pro_fecter           DateTime?            @db.DateTime
+  pro_supter           String?              @db.VarChar(1)
+  tb_parte_produccionc tb_parte_produccionc @relation(fields: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], references: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_procesod_parte_producciond")
+  tb_subproceso        tb_subproceso        @relation(fields: [pro_codtic, pro_codsup], references: [pro_codtic, pro_codsup], onUpdate: NoAction, map: "fk_movimiento_procesod_subproceso")
+  tb_personal          tb_personal          @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_movimineto_procesod_personal")
+
+  @@id([pro_codtic, pro_codfol, pro_numser, pro_numdoc, pro_itemov, pro_codpro, pro_codsup], map: "pk_movimiento_procesod")
+}
+
+model tb_movimiento_rollo_gasto {
+  pro_codtic           String               @db.VarChar(15)
+  pro_codtid           String               @db.VarChar(3)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_codgas           String               @db.VarChar(15)
+  pro_mongas           Decimal              @db.Decimal(18, 2)
+  tb_gasto             tb_gasto             @relation(fields: [pro_codgas], references: [pro_codgas], onUpdate: NoAction, map: "fk_movimiento_rollo_gasto_gasto")
+  tb_movimiento_rolloc tb_movimiento_rolloc @relation(fields: [pro_codtic, pro_codtid, pro_numser, pro_numdoc], references: [pro_codtic, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_rollo_gasto_movimiento_rolloc")
+
+  @@id([pro_codtic, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_rollo_gasto")
+}
+
+model tb_movimiento_rolloc {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_codtid                String                      @db.VarChar(3)
+  pro_numser                String                      @db.VarChar(15)
+  pro_numdoc                String                      @db.VarChar(15)
+  pro_codtit                String                      @db.VarChar(3)
+  pro_fecmov                DateTime                    @db.DateTime
+  pro_glomov                String                      @db.VarChar(150)
+  pro_sergui                String                      @db.VarChar(15)
+  pro_numgui                String                      @db.VarChar(15)
+  pro_serfac                String                      @db.VarChar(15)
+  pro_numfac                String                      @db.VarChar(15)
+  pro_fecgui                DateTime                    @db.DateTime
+  pro_numref                String                      @db.VarChar(15)
+  pro_estmov                String                      @db.VarChar(15)
+  pro_codemp                String                      @db.VarChar(2)
+  NOMBRE_FACTURA            String?                     @db.VarChar(100)
+  pro_codtia                String?                     @db.VarChar(2)
+  pro_codane                String?                     @db.VarChar(15)
+  pro_modmov                String                      @db.VarChar(15)
+  tb_movimiento_rollo_gasto tb_movimiento_rollo_gasto[]
+  tb_tipo_anexo             tb_tipo_anexo?              @relation(fields: [pro_codtia], references: [pro_codtia], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_rolloc_tipo_anexo")
+  tb_empresa                tb_empresa                  @relation(fields: [pro_codemp], references: [pro_codemp], onUpdate: NoAction, map: "fk_movimientoc_empresa")
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_movimientoc_tipo_confeccion")
+  tb_tipo_documento         tb_tipo_documento           @relation(fields: [pro_codtid], references: [pro_codtid], onUpdate: NoAction, map: "fk_movimientoc_tipo_documento")
+  tb_tipo_transaccion       tb_tipo_transaccion         @relation(fields: [pro_codtit], references: [pro_codtit], onUpdate: NoAction, map: "fk_movimientoc_tipo_transaccion")
+  tb_movimiento_rollod      tb_movimiento_rollod[]
+
+  @@id([pro_codtic, pro_codtid, pro_numser, pro_numdoc], map: "pk_movimientoc")
+}
+
+model tb_movimiento_rollod {
+  pro_codtic           String               @db.VarChar(15)
+  pro_codtid           String               @db.VarChar(3)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_codart           String               @db.VarChar(50)
+  pro_nomart           String               @db.VarChar(250)
+  pro_canart           Decimal              @db.Decimal(18, 2)
+  pro_codrol           String               @db.VarChar(15)
+  pro_codcol           String               @db.VarChar(15)
+  pro_preart           Decimal              @db.Decimal(18, 4)
+  pro_gasart           Decimal              @db.Decimal(18, 4)
+  pro_pretot           Decimal              @db.Decimal(18, 4)
+  pro_totart           Decimal              @db.Decimal(18, 2)
+  pro_codcof           String               @db.VarChar(15)
+  pro_numref           String               @db.VarChar(15)
+  pro_cancom           Decimal              @db.Decimal(18, 2)
+  pro_ubiart           String?              @db.VarChar(50)
+  pro_nrolot           String?              @db.VarChar(50)
+  pro_revmts           Decimal?             @db.Decimal(18, 2)
+  tb_articulo          tb_articulo          @relation(fields: [pro_codtic, pro_codart], references: [pro_codtic, pro_codart], onUpdate: NoAction, map: "fk_movimiento_rollod_articulo")
+  tb_colores           tb_colores           @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_movimiento_rollod_color")
+  tb_colores_fabrica   tb_colores_fabrica   @relation(fields: [pro_codtic, pro_codcof], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_movimiento_rollod_color_fabrica")
+  tb_movimiento_rolloc tb_movimiento_rolloc @relation(fields: [pro_codtic, pro_codtid, pro_numser, pro_numdoc], references: [pro_codtic, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_rollod_movimiento_rolloc")
+
+  @@id([pro_codtic, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_rollod")
+  @@index([pro_codtid, pro_codrol, pro_numref], map: "idx_SQ_REPORTE_ROLLOS_ESTADOS_2")
+  @@index([pro_codtic, pro_codtid, pro_codart, pro_codcol], map: "idx_SQ_REPORTE_ROLLOS_VALORIZADO_1")
+}
+
+model tb_movimiento_servicioc {
+  pro_numser              String                    @db.VarChar(5)
+  pro_numdoc              String                    @db.VarChar(10)
+  pro_fecmov              DateTime                  @db.Date
+  pro_obsser              String                    @db.VarChar(200)
+  tb_movimiento_serviciod tb_movimiento_serviciod[]
+
+  @@id([pro_numser, pro_numdoc], map: "pk_movimiento_servicioc")
+}
+
+model tb_movimiento_serviciod {
+  pro_numser              String                  @db.VarChar(5)
+  pro_numdoc              String                  @db.VarChar(10)
+  pro_itemov              Decimal                 @db.Decimal(18, 0)
+  pro_canope              Decimal                 @db.Decimal(18, 0)
+  pro_codtic              String                  @db.VarChar(15)
+  pro_codsup              String                  @db.VarChar(6)
+  pro_codper              String                  @db.VarChar(15)
+  pro_preope              Decimal?                @db.Decimal(18, 2)
+  tb_movimiento_servicioc tb_movimiento_servicioc @relation(fields: [pro_numser, pro_numdoc], references: [pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_serviciod_servicioc")
+  tb_subproceso           tb_subproceso           @relation(fields: [pro_codtic, pro_codsup], references: [pro_codtic, pro_codsup], onUpdate: NoAction, map: "fk_movimiento_serviciod_subproceso")
+
+  @@id([pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_serviciod")
+}
+
+model tb_movimiento_ventac {
+  pro_codptv                                                           String                 @db.VarChar(3)
+  pro_codtid                                                           String                 @db.VarChar(3)
+  pro_numser                                                           String                 @db.VarChar(15)
+  pro_numdoc                                                           String                 @db.VarChar(15)
+  pro_codcli                                                           String                 @db.VarChar(15)
+  pro_nomcli                                                           String                 @db.VarChar(80)
+  pro_ruccli                                                           String                 @db.VarChar(11)
+  pro_fecmov                                                           DateTime               @db.Date
+  pro_codfpa                                                           String                 @db.VarChar(3)
+  pro_telcli                                                           String                 @db.VarChar(15)
+  pro_emacli                                                           String                 @db.VarChar(35)
+  pro_concli                                                           String                 @db.VarChar(50)
+  pro_codper                                                           String                 @db.VarChar(15)
+  pro_ptopar                                                           String                 @db.VarChar(120)
+  pro_ptolle                                                           String                 @db.VarChar(120)
+  pro_tipven                                                           String                 @db.VarChar(30)
+  pro_impmov                                                           Decimal                @db.Decimal(10, 2)
+  pro_estmov                                                           String                 @db.VarChar(15)
+  pro_tramov                                                           String                 @db.VarChar(11)
+  pro_vehmov                                                           String                 @db.VarChar(10)
+  pro_modmov                                                           String                 @db.VarChar(30)
+  pro_dscsto                                                           String                 @default("S", map: "DF__tb_movimi__pro_d__70FDBF69") @db.VarChar(1)
+  pro_ptvref                                                           String                 @db.VarChar(3)
+  pro_tipref                                                           String                 @db.VarChar(3)
+  pro_serref                                                           String                 @db.VarChar(5)
+  pro_numref                                                           String                 @db.VarChar(10)
+  pro_mottra                                                           String                 @db.VarChar(30)
+  pro_numpro                                                           String                 @db.VarChar(6)
+  pro_numcan                                                           String                 @db.VarChar(6)
+  pro_glomov                                                           String                 @db.VarChar(150)
+  pro_almref                                                           String?                @db.VarChar(3)
+  tb_almacen                                                           tb_almacen?            @relation(fields: [pro_almref], references: [pro_codalm], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_ventac_almacen")
+  tb_cliente                                                           tb_cliente             @relation(fields: [pro_codcli], references: [pro_codcli], onUpdate: NoAction, map: "fk_movimiento_ventac_cliente")
+  tb_forma_pago                                                        tb_forma_pago          @relation(fields: [pro_codfpa], references: [pro_codfpa], onUpdate: NoAction, map: "fk_movimiento_ventac_forma_pago")
+  tb_personal                                                          tb_personal            @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_movimiento_ventac_personal")
+  tb_ptoventa_tb_movimiento_ventac_pro_codptvTotb_ptoventa             tb_ptoventa            @relation("tb_movimiento_ventac_pro_codptvTotb_ptoventa", fields: [pro_codptv], references: [pro_codptv], onUpdate: NoAction, map: "fk_movimiento_ventac_pto_venta")
+  tb_ptoventa_tb_movimiento_ventac_pro_ptvrefTotb_ptoventa             tb_ptoventa            @relation("tb_movimiento_ventac_pro_ptvrefTotb_ptoventa", fields: [pro_ptvref], references: [pro_codptv], onUpdate: NoAction, map: "fk_movimiento_ventac_pto_venta_ref")
+  tb_tipo_documento_tb_movimiento_ventac_pro_codtidTotb_tipo_documento tb_tipo_documento      @relation("tb_movimiento_ventac_pro_codtidTotb_tipo_documento", fields: [pro_codtid], references: [pro_codtid], onUpdate: NoAction, map: "fk_movimiento_ventac_tipo_doc")
+  tb_tipo_documento_tb_movimiento_ventac_pro_tiprefTotb_tipo_documento tb_tipo_documento      @relation("tb_movimiento_ventac_pro_tiprefTotb_tipo_documento", fields: [pro_tipref], references: [pro_codtid], onUpdate: NoAction, map: "fk_movimiento_ventac_tipo_ref")
+  tb_movimiento_ventad                                                 tb_movimiento_ventad[]
+
+  @@id([pro_codptv, pro_codtid, pro_numser, pro_numdoc], map: "pk_movimiento_ventac")
+}
+
+model tb_movimiento_ventad {
+  pro_codptv           String               @db.VarChar(3)
+  pro_codtid           String               @db.VarChar(3)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_es               String               @db.VarChar(1)
+  pro_codtic           String               @db.VarChar(15)
+  pro_codart           String               @db.VarChar(30)
+  pro_canmov           Decimal              @db.Decimal(10, 0)
+  pro_premov           Decimal              @db.Decimal(18, 2)
+  pro_basimp           Decimal              @db.Decimal(18, 2)
+  pro_igvmov           Decimal              @db.Decimal(18, 2)
+  pro_impmov           Decimal              @db.Decimal(18, 2)
+  pro_artboo           String               @default("S", map: "DF__tb_movimi__pro_a__7E57BA87") @db.VarChar(1)
+  pro_codtia           String               @db.VarChar(2)
+  pro_codane           String               @db.VarChar(15)
+  pro_monane           Decimal              @db.Decimal(18, 2)
+  pro_codcli           String               @db.VarChar(15)
+  pro_almref           String               @db.VarChar(3)
+  pro_tipref           String               @db.VarChar(3)
+  pro_serref           String               @db.VarChar(5)
+  pro_numref           String               @db.VarChar(10)
+  pro_iteref           Decimal              @db.Decimal(18, 0)
+  pro_codfpa           String               @db.VarChar(3)
+  pro_preart           Decimal              @db.Decimal(18, 2)
+  pro_punart           Decimal              @db.Decimal(18, 2)
+  pro_preuni           Decimal?             @db.Decimal(18, 2)
+  tb_almacen           tb_almacen           @relation(fields: [pro_almref], references: [pro_codalm], onUpdate: NoAction, map: "fk_movimiento_ventad_almacen")
+  tb_anexo             tb_anexo             @relation(fields: [pro_codtia, pro_codane], references: [pro_codtia, pro_codane], onUpdate: NoAction, map: "fk_movimiento_ventad_anexo")
+  tb_cliente           tb_cliente           @relation(fields: [pro_codcli], references: [pro_codcli], onUpdate: NoAction, map: "fk_movimiento_ventad_cliente")
+  tb_movimiento_ventac tb_movimiento_ventac @relation(fields: [pro_codptv, pro_codtid, pro_numser, pro_numdoc], references: [pro_codptv, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_ventad_movimiento_ventac")
+  tb_tipo_anexo        tb_tipo_anexo        @relation(fields: [pro_codtia], references: [pro_codtia], onUpdate: NoAction, map: "fk_movimiento_ventad_tipo_anexo")
+  tb_tipo_documento    tb_tipo_documento    @relation(fields: [pro_tipref], references: [pro_codtid], onUpdate: NoAction, map: "fk_movimiento_ventad_tipo_ref")
+
+  @@id([pro_codptv, pro_codtid, pro_numser, pro_numdoc, pro_itemov], map: "pk_movimiento_ventad")
+  @@index([pro_artboo], map: "idx_valorizado_1")
+}
+
+model tb_parte_produccion_insumosc {
+  pro_codtic                   String                         @db.VarChar(15)
+  pro_numser                   String                         @db.VarChar(5)
+  pro_numdoc                   String                         @db.VarChar(10)
+  pro_fecmov                   DateTime                       @db.Date
+  pro_canmts                   Decimal                        @db.Decimal(18, 2)
+  pro_ancmes                   Decimal                        @db.Decimal(18, 2)
+  pro_estmov                   String                         @db.VarChar(15)
+  pro_glomov                   String                         @db.VarChar(500)
+  pro_codres                   String                         @db.VarChar(15)
+  pro_codcal                   String                         @db.VarChar(15)
+  tb_parte_produccion_insumosd tb_parte_produccion_insumosd[]
+
+  @@id([pro_codtic, pro_numser, pro_numdoc], map: "pk_parte_produccion_insumosc")
+}
+
+model tb_parte_produccion_insumosd {
+  pro_codtic                   String                       @db.VarChar(15)
+  pro_numser                   String                       @db.VarChar(5)
+  pro_numdoc                   String                       @db.VarChar(10)
+  pro_itemov                   Decimal                      @db.Decimal(18, 0)
+  pro_codrol                   String                       @db.VarChar(15)
+  pro_canart                   Decimal?                     @db.Decimal(18, 2)
+  pro_numcap                   Decimal?                     @db.Decimal(18, 2)
+  pro_canrev                   Decimal?                     @db.Decimal(18, 2)
+  pro_codori                   String                       @db.VarChar(50)
+  pro_codcol                   String                       @db.VarChar(15)
+  tb_parte_produccion_insumosc tb_parte_produccion_insumosc @relation(fields: [pro_codtic, pro_numser, pro_numdoc], references: [pro_codtic, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_parte_produccion_insumosd_parte_produccion_insumosc")
+
+  @@id([pro_codtic, pro_numser, pro_numdoc, pro_itemov], map: "pk_parte_produccion_insumosd")
+}
+
+model tb_parte_produccionc {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_codfol                String                      @db.VarChar(15)
+  pro_numser                String                      @db.VarChar(15)
+  pro_numdoc                String                      @db.VarChar(15)
+  pro_fecmov                DateTime                    @db.DateTime
+  pro_canmts                Decimal                     @db.Decimal(18, 2)
+  pro_labtal1               String                      @db.VarChar(4)
+  pro_labtal2               String                      @db.VarChar(4)
+  pro_labtal3               String                      @db.VarChar(4)
+  pro_labtal4               String                      @db.VarChar(4)
+  pro_labtal5               String                      @db.VarChar(4)
+  pro_labtal6               String                      @db.VarChar(4)
+  pro_textal1               Decimal                     @db.Decimal(18, 0)
+  pro_textal2               Decimal                     @db.Decimal(18, 0)
+  pro_textal3               Decimal                     @db.Decimal(18, 0)
+  pro_textal4               Decimal                     @db.Decimal(18, 0)
+  pro_textal5               Decimal                     @db.Decimal(18, 0)
+  pro_textal6               Decimal                     @db.Decimal(18, 0)
+  pro_codtco                String                      @db.VarChar(15)
+  pro_codper                String                      @db.VarChar(15)
+  pro_labad1                String                      @db.VarChar(4)
+  pro_labad2                String                      @db.VarChar(4)
+  pro_labad3                String                      @db.VarChar(4)
+  pro_estmov                String                      @db.VarChar(15)
+  pro_numref                String                      @db.VarChar(15)
+  pro_glomov                String                      @db.VarChar(200)
+  pro_ancmes                Decimal                     @db.Decimal(18, 2)
+  pro_tipurg                String                      @db.VarChar(30)
+  pro_boolav                String                      @db.VarChar(1)
+  pro_codcal                String?                     @db.VarChar(15)
+  pro_grumes                String?                     @db.VarChar(10)
+  pro_talcom                String?                     @db.VarChar(4)
+  pro_coddob1               String?                     @db.VarChar(15)
+  pro_coddob2               String?                     @db.VarChar(15)
+  pro_codtiz1               String?                     @db.VarChar(15)
+  pro_codtiz2               String?                     @db.VarChar(15)
+  pro_codcor1               String?                     @db.VarChar(15)
+  pro_codcor2               String?                     @db.VarChar(15)
+  pro_codetd                String?                     @db.VarChar(15)
+  pro_codett                String?                     @db.VarChar(15)
+  pro_codaum                String?                     @db.VarChar(15)
+  tb_movimiento_lavanderiac tb_movimiento_lavanderiac[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+  tb_movimiento_procesod    tb_movimiento_procesod[]
+  tb_calidad                tb_calidad?                 @relation(fields: [pro_codtic, pro_codcal], references: [pro_codtic, pro_codcal], onUpdate: NoAction, map: "fk_parte_produccionc_calidad")
+  tb_folder                 tb_folder                   @relation(fields: [pro_codtic, pro_codfol], references: [pro_codtic, pro_codfol], onUpdate: NoAction, map: "fk_parte_produccionc_folder")
+  tb_personal               tb_personal                 @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_parte_produccionc_personal")
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_parte_produccionc_tipo_confeccion")
+  tb_tipo_corte             tb_tipo_corte               @relation(fields: [pro_codtic, pro_codtco], references: [pro_codtic, pro_codtco], onUpdate: NoAction, map: "fk_parte_produccionc_tipo_corte")
+  tb_parte_producciond      tb_parte_producciond[]
+
+  @@id([pro_codtic, pro_codfol, pro_numser, pro_numdoc], map: "pk_parte_produccionc")
+}
+
+model tb_parte_producciond {
+  pro_codtic           String               @db.VarChar(15)
+  pro_codfol           String               @db.VarChar(15)
+  pro_numser           String               @db.VarChar(15)
+  pro_numdoc           String               @db.VarChar(15)
+  pro_itemov           Decimal              @db.Decimal(18, 0)
+  pro_codart           String               @db.VarChar(15)
+  pro_nomart           String               @db.VarChar(250)
+  pro_canart           Decimal              @db.Decimal(18, 2)
+  pro_numcap           Decimal              @db.Decimal(18, 2)
+  pro_cancor           Decimal              @db.Decimal(18, 2)
+  pro_canres           Decimal              @db.Decimal(18, 2)
+  pro_codori           String               @db.VarChar(50)
+  pro_codcol           String               @db.VarChar(15)
+  pro_premet           Decimal              @db.Decimal(18, 2)
+  pro_preart           Decimal              @db.Decimal(18, 2)
+  pro_canta1           Decimal              @db.Decimal(18, 0)
+  pro_canta2           Decimal              @db.Decimal(18, 0)
+  pro_canta3           Decimal              @db.Decimal(18, 0)
+  pro_canta4           Decimal              @db.Decimal(18, 0)
+  pro_canta5           Decimal              @db.Decimal(18, 0)
+  pro_canta6           Decimal              @db.Decimal(18, 0)
+  pro_canad1           Decimal              @db.Decimal(18, 0)
+  pro_canad2           Decimal              @db.Decimal(18, 0)
+  pro_canad3           Decimal              @db.Decimal(18, 0)
+  pro_terrol           String               @db.VarChar(1)
+  pro_numref           String               @db.VarChar(15)
+  pro_hilrem           String               @db.VarChar(50)
+  pro_hilcos           String               @db.VarChar(50)
+  pro_grumes           String?              @db.VarChar(10)
+  pro_coddob1          String?              @db.VarChar(15)
+  pro_coddob2          String?              @db.VarChar(15)
+  pro_codtiz1          String?              @db.VarChar(15)
+  pro_codtiz2          String?              @db.VarChar(15)
+  pro_codcor1          String?              @db.VarChar(15)
+  pro_codcor2          String?              @db.VarChar(15)
+  pro_codetd           String?              @db.VarChar(15)
+  pro_codett           String?              @db.VarChar(15)
+  pro_codaum           String?              @db.VarChar(15)
+  pro_revmts           Decimal?             @db.Decimal(18, 2)
+  tb_articulo          tb_articulo          @relation(fields: [pro_codtic, pro_codori], references: [pro_codtic, pro_codart], onUpdate: NoAction, map: "fk_parte_producciond_articulo")
+  tb_colores           tb_colores           @relation(fields: [pro_codtic, pro_codcol], references: [pro_codtic, pro_codcol], onUpdate: NoAction, map: "fk_parte_producciond_color")
+  tb_parte_produccionc tb_parte_produccionc @relation(fields: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], references: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_parte_producciond_parte_produccionc")
+
+  @@id([pro_codtic, pro_codfol, pro_numser, pro_numdoc, pro_itemov], map: "pk_parte_producciond")
+  @@index([pro_codart], map: "idx_SQ_REPORTE_ROLLOS_ESTADOS_1")
+}
+
+model tb_periodo_contable {
+  pro_ejecon                String                      @db.VarChar(4)
+  pro_percon                String                      @db.VarChar(8)
+  pro_ordper                Int?
+  tb_talonario_contabilidad tb_talonario_contabilidad[]
+
+  @@id([pro_ejecon, pro_percon], map: "pk_periodo_contable")
+}
+
+model tb_permisos {
+  pro_logusu  String      @db.VarChar(15)
+  pro_allow   String      @default("S", map: "DF__tb_permis__pro_a__71D1E811") @db.VarChar(1)
+  pro_ordmen  Int
+  tb_usuarios tb_usuarios @relation(fields: [pro_logusu], references: [pro_logusu], onUpdate: NoAction, map: "fk_permiso_usuario")
+
+  @@id([pro_logusu, pro_ordmen], map: "pk_permisos")
+}
+
+model tb_personal {
+  pro_codper                String                      @id(map: "pk_personal") @db.VarChar(15)
+  pro_nomper                String                      @db.VarChar(150)
+  pro_intext                String                      @db.VarChar(7)
+  pro_codubi                String                      @db.VarChar(8)
+  pro_dirper                String                      @db.VarChar(250)
+  pro_telper                String                      @db.VarChar(15)
+  pro_booven                String                      @default("N", map: "DF__tb_person__pro_b__34C8D9D1") @db.VarChar(1)
+  pro_booalm                String                      @default("N", map: "DF__tb_person__pro_b__35BCFE0A") @db.VarChar(1)
+  pro_boopro                String                      @default("N", map: "DF__tb_person__pro_b__36B12243") @db.VarChar(1)
+  pro_booadm                String                      @default("N", map: "DF__tb_person__pro_b__37A5467C") @db.VarChar(1)
+  pro_estper                String                      @db.VarChar(15)
+  pro_codare                String?                     @db.VarChar(5)
+  pro_codcar                String?                     @db.VarChar(5)
+  pro_apeper                String?                     @db.VarChar(500)
+  pro_tipdoc                String?                     @db.VarChar(10)
+  pro_sexper                String?                     @db.VarChar(1)
+  pro_estciv                String?                     @db.VarChar(50)
+  pro_corper                String?                     @db.VarChar(250)
+  pro_fecnac                DateTime?                   @db.DateTime
+  pro_lugnac                String?                     @db.VarChar(500)
+  pro_tipviv                String?                     @db.VarChar(100)
+  pro_grains                String?                     @db.VarChar(100)
+  pro_tipemp                String?                     @db.VarChar(100)
+  pro_saling                Decimal?                    @db.Decimal(18, 2)
+  pro_fecing                DateTime?                   @db.Date
+  pro_antlab                String?                     @db.VarChar(1000)
+  pro_connom                String?                     @db.VarChar(100)
+  pro_coneda                Decimal?                    @db.Decimal(18, 0)
+  pro_conocu                String?                     @db.VarChar(100)
+  pro_conhij                Decimal?                    @db.Decimal(18, 0)
+  pro_conhim                String?                     @db.VarChar(1000)
+  pro_nompad                String?                     @db.VarChar(100)
+  pro_nommad                String?                     @db.VarChar(100)
+  pro_numdoc                String?                     @db.VarChar(25)
+  pro_coddpt                String?                     @db.VarChar(10)
+  pro_tipcon                String?                     @db.VarChar(50)
+  pro_codtra                String?                     @db.VarChar(10)
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac[]
+  tb_movimiento_procesoc    tb_movimiento_procesoc[]
+  tb_movimiento_procesod    tb_movimiento_procesod[]
+  tb_movimiento_ventac      tb_movimiento_ventac[]
+  tb_parte_produccionc      tb_parte_produccionc[]
+  tb_ubigeo                 tb_ubigeo                   @relation(fields: [pro_codubi], references: [pro_codubi], onUpdate: NoAction, map: "fk_personal_ubigeo")
+  tb_rrhh_horario_ingreso   tb_rrhh_horario_ingreso[]
+}
+
+model tb_personal_area {
+  pro_codare String @id(map: "pk_personal_area") @db.VarChar(5)
+  pro_nomare String @db.VarChar(50)
+}
+
+model tb_personal_cargo {
+  pro_codcar String @id(map: "pk_personal_cargo") @db.VarChar(5)
+  pro_nomcar String @db.VarChar(50)
+}
+
+model tb_plan_contable {
+  pro_codcue     String           @id(map: "pk_plan_contable") @db.VarChar(20)
+  pro_nomcue     String           @db.VarChar(120)
+  pro_nivcue     Int
+  pro_codtia     String           @default("00", map: "DF__tb_plan_c__pro_c__7B5B524B") @db.VarChar(2)
+  tb_ctacte      tb_ctacte[]
+  tb_subvoucherd tb_subvoucherd[]
+}
+
+model tb_procedencia {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codpro         String             @db.VarChar(15)
+  pro_nompro         String             @db.VarChar(80)
+  tb_articulo        tb_articulo[]
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_procedencia_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codpro], map: "pk_procedencia")
+}
+
+model tb_proceso {
+  pro_codtic                  String                       @db.VarChar(15)
+  pro_codpro                  String                       @db.VarChar(6)
+  pro_nompro                  String                       @db.VarChar(150)
+  pro_codproa                 String                       @db.VarChar(6)
+  pro_codpros                 String?                      @db.VarChar(6)
+  tb_configuracion_produccion tb_configuracion_produccion?
+  tb_motivo_falla             tb_motivo_falla[]
+  tb_movimiento_procesoc      tb_movimiento_procesoc[]
+  tb_tipo_confeccion          tb_tipo_confeccion           @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_proceso_tipo_confeccion")
+  tb_subproceso               tb_subproceso[]
+
+  @@id([pro_codtic, pro_codpro], map: "pk_proceso")
+}
+
+model tb_proveedor {
+  pro_codpro String    @id(map: "pk_proveedor") @db.VarChar(15)
+  pro_nompro String    @db.VarChar(150)
+  pro_codubi String    @db.VarChar(8)
+  pro_dirpro String    @db.VarChar(250)
+  pro_telpro String    @db.VarChar(15)
+  pro_pagweb String    @db.VarChar(50)
+  pro_tipdoc String    @db.VarChar(10)
+  pro_numdoc String    @db.VarChar(15)
+  pro_conpro String    @db.VarChar(50)
+  pro_contel String    @db.VarChar(15)
+  pro_conema String    @db.VarChar(50)
+  pro_estpro String    @db.VarChar(15)
+  tb_ubigeo  tb_ubigeo @relation(fields: [pro_codubi], references: [pro_codubi], onUpdate: NoAction, map: "fk_proveedor_ubigeo")
+}
+
+model tb_ptoventa {
+  pro_codptv                                                        String                 @id(map: "pk_ptoventa") @db.VarChar(3)
+  pro_nomptv                                                        String                 @db.VarChar(50)
+  pro_dirptv                                                        String                 @db.VarChar(120)
+  pro_estptv                                                        String                 @db.VarChar(15)
+  pro_codalm                                                        String                 @db.VarChar(3)
+  pro_zona                                                          String?                @db.VarChar(10)
+  tb_movimiento_ventac_tb_movimiento_ventac_pro_codptvTotb_ptoventa tb_movimiento_ventac[] @relation("tb_movimiento_ventac_pro_codptvTotb_ptoventa")
+  tb_movimiento_ventac_tb_movimiento_ventac_pro_ptvrefTotb_ptoventa tb_movimiento_ventac[] @relation("tb_movimiento_ventac_pro_ptvrefTotb_ptoventa")
+  tb_stock_mercaderia2                                              tb_stock_mercaderia2[]
+  tb_talonario                                                      tb_talonario[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_receta {
+  pro_codtic String  @db.VarChar(15)
+  pro_codtre String  @db.VarChar(3)
+  pro_codins String  @db.VarChar(15)
+  pro_canins Decimal @db.Decimal(18, 0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_receta_color {
+  pro_codtic  String @db.VarChar(15)
+  pro_codtre  String @db.VarChar(3)
+  pro_codins  String @db.VarChar(15)
+  pro_codcol  String @db.VarChar(15)
+  pro_codcol2 String @db.VarChar(15)
+
+  @@ignore
+}
+
+model tb_requerimientoc {
+  pro_numser        String              @db.VarChar(10)
+  pro_numdoc        String              @db.VarChar(15)
+  pro_fecdoc        DateTime            @db.Date
+  pro_codtia        String              @db.VarChar(2)
+  pro_codane        String              @db.VarChar(15)
+  pro_glomov        String              @db.VarChar(50)
+  pro_estmov        String?             @db.VarChar(15)
+  tb_requerimientod tb_requerimientod[]
+
+  @@id([pro_numser, pro_numdoc], map: "pk_requerimientoc")
+}
+
+model tb_requerimientod {
+  pro_numser        String            @db.VarChar(10)
+  pro_numdoc        String            @db.VarChar(15)
+  pto_itemov        Decimal           @db.Decimal(18, 0)
+  pro_codtic        String            @db.VarChar(15)
+  pro_codins        String            @db.VarChar(20)
+  pro_canins        Decimal           @db.Decimal(18, 2)
+  pro_preins        Decimal?          @db.Decimal(18, 4)
+  pro_codund        String            @db.VarChar(15)
+  pro_cancom        Decimal?          @db.Decimal(18, 2)
+  tb_insumos        tb_insumos        @relation(fields: [pro_codtic, pro_codins], references: [pro_codtic, pro_codins], onUpdate: NoAction, map: "fk_requerimientod")
+  tb_requerimientoc tb_requerimientoc @relation(fields: [pro_numser, pro_numdoc], references: [pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_requerimientod_requerimientoc")
+
+  @@id([pro_numser, pro_numdoc, pto_itemov], map: "pk_requerimientod")
+}
+
+model tb_rrhh_horario_ingreso {
+  pro_equipo           String               @db.VarChar(50)
+  pro_fecdia           DateTime             @db.Date
+  pro_codper           String               @db.VarChar(15)
+  pro_horent           DateTime             @db.Time
+  pro_horsal           DateTime             @db.Time
+  pro_estdia           String               @db.VarChar(1)
+  pro_obsper           String               @db.VarChar(500)
+  tb_personal          tb_personal          @relation(fields: [pro_codper], references: [pro_codper], onUpdate: NoAction, map: "fk_rrhh_horario_ingreso_personal")
+  tb_rrhh_parte_diario tb_rrhh_parte_diario @relation(fields: [pro_equipo, pro_fecdia], references: [pro_equipo, pro_fecdia], onUpdate: NoAction, map: "fk_rrhh_horario_ingreso_rrhh_parte_diario")
+
+  @@id([pro_fecdia, pro_codper], map: "pk_rrhh_horario_ingreso")
+}
+
+model tb_rrhh_parte_diario {
+  pro_equipo              String                    @db.VarChar(50)
+  pro_fecdia              DateTime                  @db.Date
+  pro_obsdia              String                    @db.VarChar(1000)
+  tb_rrhh_horario_ingreso tb_rrhh_horario_ingreso[]
+
+  @@id([pro_equipo, pro_fecdia], map: "pk_rrhh_parte_diario")
+}
+
+model tb_stock_insumos {
+  pro_codalm String     @db.VarChar(3)
+  pro_codtic String     @db.VarChar(15)
+  pro_codins String     @db.VarChar(20)
+  pro_stoins Decimal?   @db.Decimal(18, 2)
+  tb_insumos tb_insumos @relation(fields: [pro_codtic, pro_codins], references: [pro_codtic, pro_codins], onUpdate: NoAction, map: "fk_insumos_stock_insumos")
+  tb_almacen tb_almacen @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_stock_insumos_almacen")
+
+  @@id([pro_codalm, pro_codtic, pro_codins], map: "pk_stock_insumos")
+}
+
+model tb_stock_mercaderia {
+  pro_codalm         String             @db.VarChar(3)
+  pro_codtic         String             @db.VarChar(15)
+  pro_codmer         String             @db.VarChar(30)
+  pro_canmer         Decimal            @db.Decimal(18, 0)
+  pro_cosmer         Decimal            @db.Decimal(18, 2)
+  tb_almacen         tb_almacen         @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_stock_mercaderia_almacen")
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_stock_mercaderia_tipo_confeccion")
+
+  @@id([pro_codalm, pro_codmer], map: "pk_stock_mercaderia")
+}
+
+model tb_stock_mercaderia2 {
+  pro_codptv    String        @db.VarChar(3)
+  pro_codtic    String        @db.VarChar(15)
+  pro_codmer    String        @db.VarChar(30)
+  pro_stoart    Decimal       @db.Decimal(18, 0)
+  tb_mercaderia tb_mercaderia @relation(fields: [pro_codtic, pro_codmer], references: [pro_codtic, pro_codmer], onUpdate: NoAction, map: "fk_stock_mercaderia2_mercaderia")
+  tb_ptoventa   tb_ptoventa   @relation(fields: [pro_codptv], references: [pro_codptv], onUpdate: NoAction, map: "fk_stock_mercaderia2_pto_venta")
+
+  @@id([pro_codptv, pro_codtic, pro_codmer], map: "pk_stock_mercaderia2")
+}
+
+model tb_subfamilia {
+  pro_codsub     String           @id(map: "pk_subfamilia") @db.VarChar(10)
+  pro_nomsub     String           @db.VarChar(50)
+  tb_mercaderia2 tb_mercaderia2[]
+}
+
+model tb_subproceso {
+  pro_codtic                       String                             @db.VarChar(15)
+  pro_codsup                       String                             @db.VarChar(6)
+  pro_nomsup                       String                             @db.VarChar(150)
+  pro_codpro                       String                             @db.VarChar(6)
+  pro_cosint                       Decimal                            @db.Decimal(18, 3)
+  pro_cosext                       Decimal                            @db.Decimal(18, 3)
+  tb_movimiento_procesod           tb_movimiento_procesod[]
+  tb_movimiento_serviciod          tb_movimiento_serviciod[]
+  tb_proceso                       tb_proceso                         @relation(fields: [pro_codtic, pro_codpro], references: [pro_codtic, pro_codpro], onUpdate: NoAction, map: "fk_subproceso_proceso")
+  tb_tipo_confeccion               tb_tipo_confeccion                 @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_subproceso_tipo_confeccion")
+  tb_subproceso_ingreso_produccion tb_subproceso_ingreso_produccion[]
+
+  @@id([pro_codtic, pro_codsup], map: "pk_subproceso")
+}
+
+model tb_subproceso_ingreso_produccion {
+  pro_codalm                String                    @db.VarChar(3)
+  pro_codtid                String                    @db.VarChar(3)
+  pro_numser                String                    @db.VarChar(15)
+  pro_numdoc                String                    @db.VarChar(15)
+  pro_codsup                String                    @db.VarChar(6)
+  pro_codtic                String                    @db.VarChar(15)
+  pro_codfol                String                    @db.VarChar(15)
+  pro_sermes                String                    @db.VarChar(5)
+  pro_nummes                String                    @db.VarChar(10)
+  pro_itemes                Decimal                   @db.Decimal(18, 2)
+  pro_codper1               String                    @db.VarChar(15)
+  pro_canmov1               Decimal                   @db.Decimal(18, 2)
+  pro_codper2               String                    @db.VarChar(15)
+  pro_canmov2               Decimal                   @db.Decimal(18, 2)
+  tb_folder                 tb_folder                 @relation(fields: [pro_codtic, pro_codfol], references: [pro_codtic, pro_codfol], onUpdate: NoAction, map: "fk_subprocesod_produccion_folder")
+  tb_movimiento_mercaderiac tb_movimiento_mercaderiac @relation(fields: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], references: [pro_codalm, pro_codtid, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_subprocesod_produccion_movimientod")
+  tb_subproceso             tb_subproceso             @relation(fields: [pro_codtic, pro_codsup], references: [pro_codtic, pro_codsup], onUpdate: NoAction, map: "fk_subprocesod_produccion_subproceso")
+
+  @@id([pro_codalm, pro_codtid, pro_numser, pro_numdoc, pro_codsup], map: "pk_subprocesod_produccion")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_subproceso_ingreso_produccion_ant {
+  pro_codtic    String  @db.VarChar(15)
+  pro_codfol    String  @db.VarChar(15)
+  pro_numser    String  @db.VarChar(5)
+  pro_numdoc    String  @db.VarChar(10)
+  pro_itemov    Decimal @db.Decimal(18, 2)
+  pro_codper1   String  @db.VarChar(15)
+  pro_canmov1   Decimal @db.Decimal(18, 2)
+  pro_codper2   String  @db.VarChar(15)
+  pro_canmov2   Decimal @db.Decimal(18, 2)
+  pro_codsup    String  @db.VarChar(6)
+  pro_codalm    String? @db.VarChar(3)
+  pro_codtid    String? @db.VarChar(3)
+  pro_seriemov  String? @db.VarChar(15)
+  pro_numeromov String? @db.VarChar(15)
+
+  @@ignore
+}
+
+model tb_subvoucherc {
+  pro_codsub                String                      @id(map: "pk_subvoucherc") @db.VarChar(2)
+  pro_nomsub                String                      @db.VarChar(50)
+  tb_subvoucherd            tb_subvoucherd[]
+  tb_talonario_contabilidad tb_talonario_contabilidad[]
+}
+
+model tb_subvoucherd {
+  pro_codsub       String           @db.VarChar(2)
+  pro_itemov       Int
+  pro_codcue       String           @db.VarChar(20)
+  pro_tipmon       String           @default("MN", map: "DF__tb_subvou__pro_t__00200768") @db.VarChar(2)
+  pro_dh           String           @default("D", map: "DF__tb_subvou__pro_d__01142BA1") @db.VarChar(1)
+  tb_plan_contable tb_plan_contable @relation(fields: [pro_codcue], references: [pro_codcue], onUpdate: NoAction, map: "fk_subvoucherd_plan_contable")
+  tb_subvoucherc   tb_subvoucherc   @relation(fields: [pro_codsub], references: [pro_codsub], onUpdate: NoAction, map: "fk_subvoucherd_subvoucherc")
+
+  @@id([pro_codsub, pro_itemov], map: "pk_subvoucherd")
+}
+
+model tb_talla {
+  pro_codtic             String                   @db.VarChar(15)
+  pro_codtal             String                   @db.VarChar(15)
+  pro_nomtal             String                   @db.VarChar(80)
+  pro_nomser             String?                  @db.VarChar(80)
+  tb_conteo_tienda       tb_conteo_tienda[]
+  tb_mercaderia          tb_mercaderia[]
+  tb_movimiento_procesoc tb_movimiento_procesoc[]
+  tb_tipo_confeccion     tb_tipo_confeccion       @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_talla_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codtal], map: "pk_talla")
+}
+
+model tb_talonario {
+  pro_codptv        String            @db.VarChar(3)
+  pro_codtid        String            @db.VarChar(3)
+  pro_numser        String            @db.VarChar(5)
+  pro_numdoc        Decimal           @default(0, map: "DF__tb_talona__pro_n__5BE2A6F2") @db.Decimal(18, 0)
+  pro_acttal        String            @default("S", map: "DF__tb_talona__pro_a__5CD6CB2B") @db.VarChar(15)
+  pro_rutfor        String            @db.VarChar(500)
+  pro_rutimp        String            @db.VarChar(500)
+  pro_numite        Int               @default(0, map: "DF__tb_talona__pro_n__5DCAEF64")
+  tb_ptoventa       tb_ptoventa       @relation(fields: [pro_codptv], references: [pro_codptv], onUpdate: NoAction, map: "fk_talonario_pto_venta")
+  tb_tipo_documento tb_tipo_documento @relation(fields: [pro_codtid], references: [pro_codtid], onUpdate: NoAction, map: "fk_talonario_tipo_documento")
+
+  @@id([pro_codptv, pro_codtid, pro_numser], map: "pk_talonario")
+}
+
+model tb_talonario_almacen {
+  pro_codalm        String            @db.VarChar(3)
+  pro_codtid        String            @db.VarChar(3)
+  pro_numser        String            @db.VarChar(5)
+  pro_numdoc        Decimal           @default(0, map: "DF__tb_talona__pro_n__628FA481") @db.Decimal(18, 0)
+  pro_acttal        String            @default("S", map: "DF__tb_talona__pro_a__6383C8BA") @db.VarChar(15)
+  tb_almacen        tb_almacen        @relation(fields: [pro_codalm], references: [pro_codalm], onUpdate: NoAction, map: "fk_talonario_almacen_almacen")
+  tb_tipo_documento tb_tipo_documento @relation(fields: [pro_codtid], references: [pro_codtid], onUpdate: NoAction, map: "fk_talonario_almacen_tipo_documento")
+
+  @@id([pro_codalm, pro_codtid, pro_numser], map: "pk_talonario_almacen")
+}
+
+model tb_talonario_contabilidad {
+  pro_ejecon          String              @db.VarChar(4)
+  pro_percon          String              @db.VarChar(8)
+  pro_codsub          String              @db.VarChar(2)
+  pro_numdoc          Int                 @default(0, map: "DF__tb_talona__pro_n__07C12930")
+  tb_periodo_contable tb_periodo_contable @relation(fields: [pro_ejecon, pro_percon], references: [pro_ejecon, pro_percon], onUpdate: NoAction, map: "fk_talonario_contabilidad_periodo_contable")
+  tb_subvoucherc      tb_subvoucherc      @relation(fields: [pro_codsub], references: [pro_codsub], onUpdate: NoAction, map: "fk_talonario_contabilidad_subvoucherc")
+
+  @@id([pro_ejecon, pro_percon, pro_codsub], map: "pk_talonario_contabilidad")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tb_temp_calculo {
+  pro_codcol String   @db.VarChar(15)
+  pro_codtal String   @db.VarChar(15)
+  pro_canmov Decimal? @db.Decimal(18, 0)
+
+  @@ignore
+}
+
+model tb_tipo_anexo {
+  pro_codtia           String                 @id(map: "pk_tipo_anexo") @db.VarChar(2)
+  pro_nomtia           String                 @db.VarChar(150)
+  tb_movimiento_rolloc tb_movimiento_rolloc[]
+  tb_movimiento_ventad tb_movimiento_ventad[]
+  tb_tipo_transaccion  tb_tipo_transaccion[]
+}
+
+model tb_tipo_cambio {
+  pro_fecha    DateTime @id(map: "pk_tipo_cambio") @db.Date
+  pro_venta    Decimal  @default(1.000, map: "DF__tb_tipo_c__pro_v__30C33EC3") @db.Decimal(10, 3)
+  pro_compra   Decimal  @default(1.000, map: "DF__tb_tipo_c__pro_c__31B762FC") @db.Decimal(10, 3)
+  pro_especial Decimal  @default(1.000, map: "DF__tb_tipo_c__pro_e__32AB8735") @db.Decimal(10, 3)
+}
+
+model tb_tipo_confeccion {
+  pro_codtic                String                      @id(map: "pk_tipo_confeccion") @db.VarChar(15)
+  pro_nomtic                String                      @db.VarChar(80)
+  tb_articulo               tb_articulo[]
+  tb_calidad                tb_calidad[]
+  tb_colores                tb_colores[]
+  tb_colores_calidad        tb_colores_calidad[]
+  tb_colores_calidad_diseno tb_colores_calidad_diseno[]
+  tb_colores_fabrica        tb_colores_fabrica[]
+  tb_diseno                 tb_diseno[]
+  tb_folder                 tb_folder[]
+  tb_insumos_categoria      tb_insumos_categoria[]
+  tb_insumos_colores        tb_insumos_colores[]
+  tb_insumos_numero         tb_insumos_numero[]
+  tb_insumos_tipo           tb_insumos_tipo[]
+  tb_motivo_falla           tb_motivo_falla[]
+  tb_movimiento_rolloc      tb_movimiento_rolloc[]
+  tb_parte_produccionc      tb_parte_produccionc[]
+  tb_procedencia            tb_procedencia[]
+  tb_proceso                tb_proceso[]
+  tb_stock_mercaderia       tb_stock_mercaderia[]
+  tb_subproceso             tb_subproceso[]
+  tb_talla                  tb_talla[]
+  tb_tipo_corte             tb_tipo_corte[]
+  tb_tipo_lavado            tb_tipo_lavado[]
+  tb_tipo_receta            tb_tipo_receta[]
+}
+
+model tb_tipo_corte {
+  pro_codtic             String                   @db.VarChar(15)
+  pro_codtco             String                   @db.VarChar(15)
+  pro_nomtco             String                   @db.VarChar(80)
+  pro_esttco             String?                  @db.VarChar(10)
+  tb_conteo_tienda       tb_conteo_tienda[]
+  tb_mercaderia          tb_mercaderia[]
+  tb_movimiento_procesoc tb_movimiento_procesoc[]
+  tb_parte_produccionc   tb_parte_produccionc[]
+  tb_tipo_confeccion     tb_tipo_confeccion       @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_tipo_corte_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codtco], map: "pk_tipo_corte")
+}
+
+model tb_tipo_documento {
+  pro_codtid                                                              String                   @id(map: "pk_tipo_documento") @db.VarChar(3)
+  pro_nomtid                                                              String                   @db.VarChar(50)
+  pro_ventid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_v__5441852A") @db.VarChar(1)
+  pro_logtid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_l__5535A963") @db.VarChar(1)
+  pro_almtid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_a__5629CD9C") @db.VarChar(1)
+  pro_cajtid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_c__571DF1D5") @db.VarChar(1)
+  pro_contid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_c__5812160E") @db.VarChar(1)
+  pro_protid                                                              String                   @default("N", map: "DF__tb_tipo_d__pro_p__59063A47") @db.VarChar(1)
+  pro_codsun                                                              String                   @db.VarChar(3)
+  pro_sigtid                                                              Decimal                  @db.Decimal(10, 2)
+  tb_movimiento_insumosc                                                  tb_movimiento_insumosc[]
+  tb_movimiento_rolloc                                                    tb_movimiento_rolloc[]
+  tb_movimiento_ventac_tb_movimiento_ventac_pro_codtidTotb_tipo_documento tb_movimiento_ventac[]   @relation("tb_movimiento_ventac_pro_codtidTotb_tipo_documento")
+  tb_movimiento_ventac_tb_movimiento_ventac_pro_tiprefTotb_tipo_documento tb_movimiento_ventac[]   @relation("tb_movimiento_ventac_pro_tiprefTotb_tipo_documento")
+  tb_movimiento_ventad                                                    tb_movimiento_ventad[]
+  tb_talonario                                                            tb_talonario[]
+  tb_talonario_almacen                                                    tb_talonario_almacen[]
+}
+
+model tb_tipo_lavado {
+  pro_codtic                String                      @db.VarChar(15)
+  pro_codtil                String                      @db.VarChar(3)
+  pro_nomtil                String?                     @db.VarChar(50)
+  tb_movimiento_lavanderiad tb_movimiento_lavanderiad[]
+  tb_tipo_confeccion        tb_tipo_confeccion          @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_tipo_lavado_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codtil], map: "pk_tipo_lavado")
+}
+
+model tb_tipo_moda {
+  pro_codtic String  @db.VarChar(15)
+  pro_codtim String  @db.VarChar(3)
+  pro_nomtim String? @db.VarChar(50)
+
+  @@id([pro_codtic, pro_codtim], map: "pk_tipo_moda")
+}
+
+model tb_tipo_producto {
+  pro_codtip     String           @id(map: "pk_tipo_producto") @db.VarChar(3)
+  pro_nomtip     String           @db.VarChar(50)
+  tb_mercaderia2 tb_mercaderia2[]
+}
+
+model tb_tipo_receta {
+  pro_codtic         String             @db.VarChar(15)
+  pro_codtre         String             @db.VarChar(3)
+  pro_nomtre         String             @db.VarChar(30)
+  tb_tipo_confeccion tb_tipo_confeccion @relation(fields: [pro_codtic], references: [pro_codtic], onUpdate: NoAction, map: "fk_tipo_receta_tipo_confeccion")
+
+  @@id([pro_codtic, pro_codtre], map: "pk_tipo_receta")
+}
+
+model tb_tipo_transaccion {
+  pro_codtit                                                                        String                      @id(map: "pk_tipo_transaccion") @db.VarChar(3)
+  pro_nomtit                                                                        String                      @db.VarChar(50)
+  pro_tiptra                                                                        String                      @db.VarChar(2)
+  pro_codtia                                                                        String                      @db.VarChar(2)
+  pro_booalm                                                                        String                      @default("N", map: "DF__tb_tipo_t__pro_b__3C69FB99") @db.VarChar(1)
+  pro_boopro                                                                        String                      @default("N", map: "DF__tb_tipo_t__pro_b__3D5E1FD2") @db.VarChar(1)
+  pro_booaut                                                                        String                      @default("N", map: "DF__tb_tipo_t__pro_b__0E8E2250") @db.VarChar(1)
+  tb_configuracion_almacen_tb_configuracion_almacen_pro_titetiTotb_tipo_transaccion tb_configuracion_almacen[]  @relation("tb_configuracion_almacen_pro_titetiTotb_tipo_transaccion") @ignore
+  tb_configuracion_almacen_tb_configuracion_almacen_pro_tittraTotb_tipo_transaccion tb_configuracion_almacen[]  @relation("tb_configuracion_almacen_pro_tittraTotb_tipo_transaccion") @ignore
+  tb_configuracion_almacen_tb_configuracion_almacen_pro_titvenTotb_tipo_transaccion tb_configuracion_almacen[]  @relation("tb_configuracion_almacen_pro_titvenTotb_tipo_transaccion") @ignore
+  tb_movimiento_insumosc                                                            tb_movimiento_insumosc[]
+  tb_movimiento_mercaderiac                                                         tb_movimiento_mercaderiac[]
+  tb_movimiento_rolloc                                                              tb_movimiento_rolloc[]
+  tb_tipo_anexo                                                                     tb_tipo_anexo               @relation(fields: [pro_codtia], references: [pro_codtia], onUpdate: NoAction, map: "fk_tipo_transaccion_tipo_anexo")
+}
+
+model tb_ubigeo {
+  pro_codubi   String         @id(map: "pk_ubigeo") @db.VarChar(8)
+  pro_nomubi   String?        @db.VarChar(150)
+  pro_tipubi   String?        @db.VarChar(3)
+  tb_cliente   tb_cliente[]
+  tb_personal  tb_personal[]
+  tb_proveedor tb_proveedor[]
+}
+
+model tb_unidad {
+  pro_codund             String                   @id(map: "pk_unidad") @db.VarChar(15)
+  pro_nomund             String                   @db.VarChar(80)
+  pro_canund             Decimal                  @db.Decimal(18, 2)
+  tb_articulo            tb_articulo[]
+  tb_mercaderia2         tb_mercaderia2[]
+  tb_movimiento_insumosd tb_movimiento_insumosd[]
+}
+
+model tb_usuarios {
+  pro_logusu  String        @id(map: "pk_usuarios") @db.VarChar(15)
+  pro_nomusu  String        @db.VarChar(50)
+  pro_pasusu  String        @db.VarChar(15)
+  pro_delreg  String        @default("N", map: "DF__tb_usuari__pro_d__68487DD7") @db.VarChar(1)
+  pro_updreg  String        @default("N", map: "DF__tb_usuari__pro_u__693CA210") @db.VarChar(1)
+  pro_insreg  String?       @db.VarChar(1)
+  tb_permisos tb_permisos[]
+}
+
+model tb_vehiculo {
+  pro_codveh String @id(map: "pk_vehiculo") @db.VarChar(10)
+  pro_marveh String @db.VarChar(50)
+  pro_modveh String @db.VarChar(50)
+  pro_numins String @db.VarChar(50)
 }
