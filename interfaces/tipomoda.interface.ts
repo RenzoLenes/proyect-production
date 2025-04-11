@@ -3,3 +3,4 @@ export interface TipoModa{
     pro_codtim: string;
     pro_nomtim?: string | null;
 }
+

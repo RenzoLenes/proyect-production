@@ -74,7 +74,7 @@ export const createUnifiedMovement = async (params: UnifiedMovementParams) => {
                         ...mov,
                         pro_codpro: params.siguienteProceso,
                         pro_fecmov: params.fechaMovimiento,
-                        pro_codper: params.operarioGeneral || mov.pro_codper,
+                        pro_codper: params.operarioGeneral || "00",
                         pro_priori: params.prioridad || mov.pro_priori || 'N',
                         pro_proter: 'N',
                         pro_fecter: new Date('1900-01-01T00:00:00Z'),

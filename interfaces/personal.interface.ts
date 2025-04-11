@@ -13,4 +13,5 @@ export interface Personal {
     pro_codare: string | null; // varchar (5), nullable
     pro_codcar: string | null; // varchar (5), nullable
     pro_apeper: string | null; // varchar (500), nullable
+    pro_rolper?: string | null; // varchar (50), nullable
 }

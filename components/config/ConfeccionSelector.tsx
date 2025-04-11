@@ -3,7 +3,7 @@
 
 import { useConfigStore } from "@/lib/store/configStore";
 import { useEffect, useState } from "react";
-import { getAllTipos } from "@/actions/tipo-confeccion/crud-tipo";
+import { getAllTipos } from "@/actions/tipo-confeccion/crud-tipoconfeccion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export const TipoConfeccionSelector = () => {

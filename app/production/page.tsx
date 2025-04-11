@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -12,13 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, QrCode, Filter, Menu, ChevronLeft, ChevronRight, Loader2, FolderX } from "lucide-react";
@@ -31,16 +24,12 @@ import { MovimientoProcesoResultado } from '@/interfaces/movproceso.interface';
 import { ParametrosMovimiento } from '@/actions/procesoc/crud-movprocesoc';
 import {
   getProcesosByTipoConfeccion,
-} from '../../actions/procesos/crud-proceso'; // Adjust the import path as needed
-import {
-  getSubprocesosByProceso
-} from '../../actions/subprocesos/crud-subprocesos'; // Adjust the import path as needed
+} from '../../actions/procesos/crud-proceso';
 import { BlockCard } from "@/components/production/BlockCard";
 import { getPersonalByTipo } from "@/actions/personal/crud-personal";
 import { Personal } from "@/interfaces/personal.interface";
 import { useConfigStore } from "@/lib/store/configStore";
 import { TipoConfeccionSelector } from "@/components/config/ConfeccionSelector";
-import { updateMovimientoDByParams, UpdateMovimientoDData, UpdateMovimientoDParams } from "@/actions/procesod/crud-movprocesod";
 import { BlockOperationDialog } from "@/components/production/BlockOperationDialog";
 import { Block } from "@/types/block";
 
@@ -57,12 +46,6 @@ export default function ProductionPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [showWarningDialog, setShowWarningDialog] = useState(false);
-  const [numberOfOperators, setNumberOfOperators] = useState(1);
-  const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
-
   const [selectedBlocks, setSelectedBlocks] = useState<Block[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [operators, setOperators] = useState<Personal[]>([]);
@@ -111,7 +94,6 @@ export default function ProductionPage() {
     costurero: "(TODOS)",
     tipoModa: "001"
   });
-
 
 
   // Add a function to handle block selection
@@ -173,16 +155,6 @@ export default function ProductionPage() {
   const indexOfLastBlock = currentPage * itemsPerPage;
   const indexOfFirstBlock = indexOfLastBlock - itemsPerPage;
   const currentBlocks = filteredBlocks.slice(indexOfFirstBlock, indexOfLastBlock);
-
-  // Manejador para mover bloque completo
-  const handleMoveBlockToNextProcess = (blockId: string) => {
-
-
-
-    console.log("Moviendo bloque completo:", blockId);
-    // Implementar lógica para mover todos los movimientos del bloque
-    fetchMovimientos(); // Refrescar datos
-  };
 
   // Fetch movimientos based on filters
   const fetchMovimientos = async () => {
@@ -260,10 +232,6 @@ export default function ProductionPage() {
   // Pagination calculations
   const indexOfLastMovimiento = currentPage * itemsPerPage;
   const indexOfFirstMovimiento = indexOfLastMovimiento - itemsPerPage;
-  const currentMovimientos = filteredMovimientos.slice(
-    indexOfFirstMovimiento,
-    indexOfLastMovimiento
-  );
 
   // Pagination handlers
   const handlePageChange = (pageNumber: number) => {
@@ -297,22 +265,13 @@ export default function ProductionPage() {
     console.log("Editing movimiento:", movimiento);
   };
 
-  const handleMoveToNextProcess = (movimiento: MovimientoProcesoResultado) => {
-    // Implement move to next process logic
-    console.log("Moving to next process:", movimiento);
-
-
-
-    // Potentially refresh movimientos or update local state
-    fetchMovimientos();
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <SideBar isMobileOpen={isMobileOpen} toggleSidebar={toggleSidebar} />
       <div className="flex-1 p-8 lg:ml-64 transition-all duration-300 ease-in-out">
         {/* Top Bar */}
         <div className="bg-background border-b sticky top-0 z-10">
+
           <div className="container mx-auto px-4 py-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -325,11 +284,12 @@ export default function ProductionPage() {
                     Seguimiento de procesos de producción
                   </p>
                 </div>
+
               </div>
 
               <div className="flex gap-2 w-full sm:w-auto justify-end">
                 <TipoConfeccionSelector />
-                <Button variant="outline" size="icon" className="hidden sm:flex">
+                <Button variant="outline" size="icon">
                   <QrCode className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" size="icon">
@@ -504,7 +464,7 @@ export default function ProductionPage() {
               >
                 Registrar Operación
               </Button>
-              
+
               <BlockOperationDialog
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}

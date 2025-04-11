@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import { Block } from '@/types/block';
 import { MoveProcessDialog } from './MoveProcessDialog';
 import { Personal } from '@/interfaces/personal.interface';
+import { useConfigStore } from '@/lib/store/configStore';
 
 interface BlockCardProps {
     bloque: Block;
@@ -48,6 +49,7 @@ export const BlockCard = ({
     const [procesos, setProcesos] = useState<{ pro_codpro: string; pro_nompro: string }[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const { tipoConfeccion } = useConfigStore();
 
     const movimientoRef = bloque.movimientos[0];
 
@@ -56,9 +58,10 @@ export const BlockCard = ({
             try {
                 setLoading(true);
 
+                console.log("Fetching procesos and subprocesos data...");
 
                 const [procesosData, subprocesosData] = await Promise.all([
-                    getProcesosByTipoConfeccion("001"),
+                    getProcesosByTipoConfeccion(tipoConfeccion),
                     getSubprocesosPorBloque(bloque, bloque.codigoProceso),
                 ]);
                 setProcesos(procesosData);
@@ -245,6 +248,8 @@ const SubprocesoBadge = ({ subproceso, bloque, onEditSubproceso }: SubprocesoBad
         e.stopPropagation();
         if (!estaCompletado && onEditSubproceso) {
             onEditSubproceso(bloque.id, subproceso.pro_codsup);
+        } else if (estaCompletado && onEditSubproceso) {
+            console.log(`Subproceso ${subproceso.pro_codsup} ya está completado. quiere editar el bloque ${bloque.id}`);
         }
     };
 

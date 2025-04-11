@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -14,9 +13,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,7 +22,6 @@ import { obtenerMovimientosPendientes } from '@/actions/procesoc/crud-movproceso
 import { MovimientoProcesoResultado } from '@/interfaces/movproceso.interface';
 import { ParametrosMovimiento } from '@/actions/procesoc/crud-movprocesoc';
 import { getProcesosByTipoConfeccion } from '../../actions/procesos/crud-proceso';
-import { getSubprocesosByProceso } from '../../actions/subprocesos/crud-subprocesos';
 import { BlockCard } from "@/components/production/BlockCard";
 import { getPersonalByTipo } from "@/actions/personal/crud-personal";
 import { Personal } from "@/interfaces/personal.interface";
@@ -48,10 +43,6 @@ export default function SuppliersPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [showWarningDialog, setShowWarningDialog] = useState(false);
-  const [numberOfOperators, setNumberOfOperators] = useState(1);
-  const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
   const [selectedBlocks, setSelectedBlocks] = useState<Block[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [operators, setOperators] = useState<Personal[]>([]);
@@ -155,28 +146,23 @@ export default function SuppliersPage() {
   const currentBlocks = filteredBlocks.slice(indexOfFirstBlock, indexOfLastBlock);
 
 
-    // Pagination handlers
-    const handlePageChange = (pageNumber: number) => {
-      setCurrentPage(pageNumber);
-    };
-  
-    const handleNextPage = () => {
-      if (currentPage < totalPages) {
-        setCurrentPage(currentPage + 1);
-      }
-    };
-  
-    const handlePrevPage = () => {
-      if (currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    };
-  
-
-  const handleMoveBlockToNextProcess = (blockId: string) => {
-    console.log("Moviendo bloque completo:", blockId);
-    fetchMovimientos();
+  // Pagination handlers
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
 
   const fetchMovimientos = async () => {
     try {
@@ -272,9 +258,9 @@ export default function SuppliersPage() {
 
               <div className="flex gap-2 w-full sm:w-auto justify-end">
                 <TipoConfeccionSelector />
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={simulateScan}
                 >
                   <QrCode className="h-5 w-5" />
@@ -342,6 +328,7 @@ export default function SuppliersPage() {
                             console.log(`Editando subproceso ${subprocesoId} en bloque ${blockId}`);
                             // Lógica para editar subproceso
                           }}
+                          fetchBloques={fetchMovimientos}
                         />
                       ))
                     )}

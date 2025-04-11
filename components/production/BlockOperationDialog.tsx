@@ -54,7 +54,8 @@ export function BlockOperationDialog({
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         // Formatear la fecha actual sin ajustar el offset
         const now = new Date();
-        return now.toISOString().slice(0, 16); // Eliminamos el ajuste de offset aquí
+        console.log("Fecha actual:", now.toISOString());
+        return now.toISOString().slice(0, 19); // Eliminamos el ajuste de offset aquí
     });
 
     // Cargar subprocesos cuando cambian los bloques seleccionados
@@ -109,7 +110,7 @@ export function BlockOperationDialog({
             setSubmitting(false);
             // Resetear la fecha al valor actual cuando se cierra
             const now = new Date();
-            const localISOTime = getLocalDate(now).toISOString().slice(0, 16); // Convertir a UTC
+            const localISOTime = getLocalDate(now).toISOString().slice(0, 19); // Convertir a UTC
             setSelectedDate(localISOTime);
         }
     }, [open]);

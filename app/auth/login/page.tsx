@@ -1,60 +1,108 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Truck } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthStore } from "@/lib/store/authStore";
 
 const credentialsByRole = [
-  { role: "admin", email: "admin@foxatel.com", password: "admin123", permissions: { dashboard: true, production: true, suppliers: true, transport: true, config: true } },
-  { role: "supervisor", email: "supervisor@foxatel.com", password: "supervisor123", permissions: { dashboard: true, production: true, suppliers: true, transport: true, config: false } },
-  { role: "operario", email: "operario@foxatel.com", password: "operario123", permissions: { dashboard: false, production: true, suppliers: false, transport: false, config: false } },
-  { role: "proveedor", email: "proveedor@foxatel.com", password: "proveedor123", permissions: { dashboard: false, production: false, suppliers: true, transport: false, config: false } },
-  { role: "conductor", email: "conductor@foxatel.com", password: "conductor123", permissions: { dashboard: false, production: false, suppliers: false, transport: true, config: false } },
+  { 
+    role: "admin", 
+    email: "admin@foxatel.com", 
+    password: "admin123", 
+    permissions: { 
+      dashboard: true, 
+      production: true, 
+      suppliers: true, 
+      transport: true, 
+      config: true 
+    } 
+  },
+  { 
+    role: "supervisor", 
+    email: "supervisor@foxatel.com", 
+    password: "supervisor123", 
+    permissions: { 
+      dashboard: true, 
+      production: true, 
+      suppliers: true, 
+      transport: true, 
+      config: false 
+    } 
+  },
+  { 
+    role: "operario interno", 
+    email: "operario@foxatel.com", 
+    password: "operario123", 
+    permissions: { 
+      dashboard: false, 
+      production: true, 
+      suppliers: false, 
+      transport: false, 
+      config: false 
+    } 
+  },
+  { 
+    role: "operario externo", 
+    email: "proveedor@foxatel.com", 
+    password: "proveedor123", 
+    permissions: { 
+      dashboard: false, 
+      production: false, 
+      suppliers: true, 
+      transport: false, 
+      config: false 
+    } 
+  },
+  { 
+    role: "conductor", 
+    email: "conductor@foxatel.com", 
+    password: "conductor123", 
+    permissions: { 
+      dashboard: false, 
+      production: false, 
+      suppliers: false, 
+      transport: true, 
+      config: false 
+    } 
+  },
 ];
 
 export default function LoginPage() {
-  const { role, email, password, setCredentials } = useAuthStore();
+  const { setCredentials, role, email, password } = useAuthStore();
   const router = useRouter();
 
   const handleRoleChange = (role: string) => {
     const credentials = credentialsByRole.find((cred) => cred.role === role);
     if (credentials) {
-      setCredentials(credentials.role, credentials.email, credentials.password, credentials.permissions);
+      setCredentials(
+        credentials.role, 
+        credentials.email, 
+        credentials.password, 
+        credentials.permissions
+      );
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    setTimeout(() => {
-      const credentials = credentialsByRole.find((cred) => cred.role === role);
-      if (credentials) {
-        localStorage.setItem("userRole", credentials.role);
-        localStorage.setItem("userPermissions", JSON.stringify(credentials.permissions));
-
-        if (credentials.permissions.dashboard) {
-          router.push("/dashboard");
-        } else if (credentials.permissions.production) {
-          router.push("/production");
-        } else if (credentials.permissions.suppliers) {
-          router.push("/suppliers");
-        } else if (credentials.permissions.transport) {
-          router.push("/transport");
-        }
+    
+    const credentials = credentialsByRole.find((cred) => cred.role === role);
+    if (credentials) {
+      if (credentials.permissions.dashboard) {
+        router.push("/dashboard");
+      } else if (credentials.permissions.production) {
+        router.push("/production");
+      } else if (credentials.permissions.suppliers) {
+        router.push("/suppliers");
+      } else if (credentials.permissions.transport) {
+        router.push("/transport");
       }
-    }, 1000);
+    }
   };
 
   return (

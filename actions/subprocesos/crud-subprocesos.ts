@@ -3,7 +3,7 @@
 import { SubProceso } from "@/interfaces/subproceso.interface";
 import { prisma } from "@/lib/prisma"
 import { Block } from '../../types/block';
-
+import { Prisma } from "@prisma/client";
 
 export const getSubprocesosByProceso = async (tipoConfeccion: string, proceso: string): Promise<SubProceso[]> => {
   try {
@@ -14,10 +14,7 @@ export const getSubprocesosByProceso = async (tipoConfeccion: string, proceso: s
       }
     });
 
-    return subprocesos.map(subproceso => ({
-      ...subproceso,
-      pro_cosext: subproceso.pro_cosext.toNumber(),
-    }));
+    return subprocesos;
 
   } catch (error) {
     console.error("Error al obtener procesos por tipo de confeccion:", error);
@@ -65,4 +62,45 @@ export const getSubprocesosPorBloque = async (block: Block, proceso: string): Pr
   }
 }
 
+
+export interface SubprocesoUpdateParams {
+  pro_codtic: string;
+  pro_codpro: string;
+  pro_codsup: string;
+}
+
+export interface SubprocesoUpdateData {
+  pro_nomsup?: string;
+  pro_cosint?: number;
+  pro_cosext?: number;
+}
+
+export const updateSubproceso = async (
+  params: SubprocesoUpdateParams,
+  data: SubprocesoUpdateData
+) => {
+  try {
+
+
+    const subproceso = await prisma.tb_subproceso.updateMany({
+      where: {
+
+        pro_codtic: params.pro_codtic,
+        pro_codpro: params.pro_codpro,
+        pro_codsup: params.pro_codsup,
+      },
+      data: {
+        pro_nomsup: data.pro_nomsup,
+        pro_cosint: data.pro_cosint ? new Prisma.Decimal(data.pro_cosint) : undefined,
+        pro_cosext: data.pro_cosext ? new Prisma.Decimal(data.pro_cosext) : undefined,
+      }
+    });
+
+    return subproceso;
+
+  } catch (error) {
+    console.error("Error al actualizar el subproceso:", error);
+    return null;
+  }
+}
 

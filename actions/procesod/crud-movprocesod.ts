@@ -173,3 +173,43 @@ export const createNewMovimientoD = async (
     }
   })
 };
+
+
+export interface DeleteMovimientoDParams {
+  pro_codtic: string;
+  pro_codfol: string;
+  pro_numser: string;
+  pro_numdoc: string;
+  pro_itemov: number;
+  pro_codpro: string;
+}
+
+export const deleteMovimientoD = async (params: DeleteMovimientoDParams) => {
+  try {
+    const result = await prisma.$transaction(async (prisma) => {
+      const deletedMovimiento = await prisma.tb_movimiento_procesod.deleteMany({
+        where: {
+          pro_codtic: params.pro_codtic,
+          pro_codfol: params.pro_codfol,
+          pro_numser: params.pro_numser,
+          pro_numdoc: params.pro_numdoc,
+          pro_itemov: params.pro_itemov,
+          pro_codpro: params.pro_codpro
+        }
+      });
+
+      // Verificar si se eliminó algún registro
+      if (deletedMovimiento.count === 0) {
+        console.warn("No se encontraron registros para eliminar con los parámetros proporcionados");
+      }
+
+      return deletedMovimiento;
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error("Error al eliminar movimientoc:", error);
+    throw new Error("No se pudo eliminar el movimientoc");
+  }
+}

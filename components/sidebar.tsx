@@ -1,35 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  BarChart3,
-  Package,
-  ArrowUpDown,
-  Truck,
-  Users,
-  ChevronLeft,
-  Settings,
-  LogOut,
-} from "lucide-react";
-import { Button } from "@/components/ui/button"; // Asegúrate de importar el botón
+import { BarChart3, Package, ArrowUpDown, Truck, Settings, ChevronLeft, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Separator } from "./ui/separator";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
-import { useConfigStore } from "@/lib/store/configStore";
 import { CompanyInfo } from "./CompanyInfo";
-import { NavItems } from "./NavItems";
-import { UserPermissions } from "@/types/user";
-import { useRolesStore } from "@/lib/store/roleStore";
-import { useUserStore } from "@/lib/store/userStore";
+import { useAuthStore } from "@/lib/store/authStore";
 
-interface CompanyInfo {
-  name: string;
-  logo?: string;
+interface NavItem {
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+  permission: boolean;
 }
-
 
 export default function SideBar({
   isMobileOpen,
@@ -38,72 +23,55 @@ export default function SideBar({
   isMobileOpen: boolean;
   toggleSidebar: () => void;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const { colors } = useConfigStore();
-  const { roles } = useRolesStore();
-  const { role: currentRoleName, clear: clearUser } = useUserStore();
-  const currentRole = roles.find(role => role.name === currentRoleName);
-  const permissions = currentRole?.permissions || {
-    dashboard: false,
-    production: false,
-    suppliers: false,
-    transport: false,
-    config: false
+  const pathname = usePathname();
+  const { role, permissions, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login");
   };
 
-
-
-  const handleLogout = async () => {
-    setTimeout(() => {
-      clearUser();
-      router.push("/auth/login");
-    }, 500);
-  };
-
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       label: "Dashboard",
       icon: <BarChart3 className="h-5 w-5" />,
       href: "/dashboard",
-      show: permissions?.dashboard,
+      permission: permissions?.dashboard || false,
     },
     {
       label: "Producción",
       icon: <Package className="h-5 w-5" />,
       href: "/production",
-      show: permissions?.production,
+      permission: permissions?.production || false,
     },
     {
       label: "Externos",
       icon: <ArrowUpDown className="h-5 w-5" />,
       href: "/suppliers",
-      show: permissions?.suppliers,
+      permission: permissions?.suppliers || false,
     },
     {
       label: "Transporte",
       icon: <Truck className="h-5 w-5" />,
       href: "/transport",
-      show: permissions?.transport,
+      permission: permissions?.transport || false,
     },
     {
       label: "Configuración",
       icon: <Settings className="h-5 w-5" />,
       href: "/config",
-      show: permissions?.config,
+      permission: permissions?.config || false,
     },
   ];
-  const visibleNavItems = navItems.filter((item) => item.show);
+
+  const filteredNavItems = navItems.filter(item => item.permission);
 
   return (
     <>
       {/* Versión Desktop */}
-      <div 
-        className="hidden lg:flex flex-col fixed h-screen w-64 bg-background border-r p-6 justify-between"
-      >
-        {/* Logo y Menú */}
+      <div className="hidden lg:flex flex-col fixed h-screen w-64 bg-background border-r p-6 justify-between">
         <div>
-          {/* LogiTrack Brand */}
           <div className="flex items-center gap-3 mb-4">
             <Truck className="h-8 w-8 text-primary" />
             <h2 className="text-xl font-bold">LogiTrack</h2>
@@ -111,13 +79,25 @@ export default function SideBar({
 
           <Separator className="mb-4" />
 
-          {/* Company Info */}
           <CompanyInfo />
 
-          <NavItems items={navItems} />
+          <nav className="space-y-1 mt-6">
+            {filteredNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${pathname === item.href
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                  }`}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* Botón de Cerrar Sesión al final */}
         <div className="border-t p-3">
           <Button
             variant="ghost"
@@ -137,30 +117,37 @@ export default function SideBar({
       >
         <div className="p-4 flex flex-col items-center h-full justify-between">
           <div className="space-y-4">
-            <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-accent">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg hover:bg-accent"
+            >
               <ChevronLeft className="h-6 w-6" />
             </button>
 
-            {/* LogiTrack Icon */}
             <div className="p-2">
               <Truck className="h-6 w-6 text-primary" />
             </div>
 
             <Separator className="w-8 mx-auto" />
 
-            {/* Company Logo/Initial */}
             <CompanyInfo mobile />
           </div>
 
-          <nav className="flex-1 flex flex-col items-center space-y-6">
-            <NavItems
-              items={navItems}
-              mobile
-              permissions={permissions}
-            />
+          <nav className="flex-1 flex flex-col items-center space-y-6 mt-6">
+            {filteredNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`p-2 rounded-lg transition-colors ${pathname === item.href
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                  }`}
+              >
+                {item.icon}
+              </Link>
+            ))}
           </nav>
 
-          {/* Botón de Cerrar Sesión en versión móvil */}
           <div className="mt-auto p-4">
             <Button
               variant="ghost"

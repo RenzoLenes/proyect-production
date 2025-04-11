@@ -67,7 +67,7 @@ export const obtenerMovimientosPendientes = async (
   try {
     // Valores predeterminados si no se proporcionan parámetros
     const parametros: ParametrosMovimiento = params || {};
-    
+
     // Asignar valores predeterminados para cada parámetro si no se proporciona
     const tipoConfeccion = parametros.tipoConfeccion || "001";
     const proceso = parametros.proceso || "(TODOS)";
@@ -89,7 +89,7 @@ export const obtenerMovimientosPendientes = async (
         @vi_tipo_moda = ${tipoModa}
     `;
 
-    const data =JSON.parse(JSON.stringify(movimientos));
+    const data = JSON.parse(JSON.stringify(movimientos));
     return data;
   } catch (error) {
     console.error("Error al ejecutar el procedimiento almacenado:", error);
@@ -100,7 +100,7 @@ export const obtenerMovimientosPendientes = async (
 
 export interface UpdateMovimientoCParams {
   pro_codtic: string;
-  pro_codfol: string; 
+  pro_codfol: string;
   pro_numser: string;
   pro_numdoc: string;
   pro_itemov: number;
@@ -151,7 +151,7 @@ export const updateMovimientoCByParams = async (
 
     return updatedMovimiento;
 
-  } catch(error) {
+  } catch (error) {
     console.error("Error al actualizar movimientoc:", error);
     throw new Error("No se pudo actualizar el movimientoc");
   }
@@ -161,7 +161,7 @@ export const updateMovimientoCByParams = async (
 
 export interface CreateNewMovimientoCParams {
   pro_codtic: string;
-  pro_codfol: string; 
+  pro_codfol: string;
   pro_numser: string;
   pro_numdoc: string;
   pro_itemov: number;
@@ -249,3 +249,44 @@ export const createNewMovimientoC = async (
     }
   });
 };
+
+
+
+export interface DeleteMovimientoCParams {
+  pro_codtic: string;
+  pro_codfol: string;
+  pro_numser: string;
+  pro_numdoc: string;
+  pro_itemov: number;
+  pro_codpro: string;
+}
+
+export const deleteMovimientoD = async (params: DeleteMovimientoCParams) => {
+  try {
+    const result = await prisma.$transaction(async (prisma) => {
+      const deletedMovimiento = await prisma.tb_movimiento_procesoc.deleteMany({
+        where: {
+          pro_codtic: params.pro_codtic,
+          pro_codfol: params.pro_codfol,
+          pro_numser: params.pro_numser,
+          pro_numdoc: params.pro_numdoc,
+          pro_itemov: params.pro_itemov,
+          pro_codpro: params.pro_codpro
+        }
+      });
+
+      // Verificar si se eliminó algún registro
+      if (deletedMovimiento.count === 0) {
+        console.warn("No se encontraron registros para eliminar con los parámetros proporcionados");
+      }
+
+      return deletedMovimiento;
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error("Error al eliminar movimientoc:", error);
+    throw new Error("No se pudo eliminar el movimientoc");
+  }
+}

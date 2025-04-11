@@ -22,6 +22,7 @@ import { Personal } from "@/interfaces/personal.interface";
 import { getSubprocesosByProceso, SubProcesoResponse } from "@/actions/subprocesos/crud-subprocesos";
 import { Block } from '@/types/block';
 import { Loader2 } from 'lucide-react';
+import { Howl } from 'howler';
 import { SubProceso } from '@/interfaces/subproceso.interface';
 import { getPersonalByTipo } from '@/actions/personal/crud-personal';
 import { format, set } from 'date-fns';
@@ -32,6 +33,10 @@ import { Input } from '../ui/input';
 import { createNewMovimientoC, CreateNewMovimientoCData } from '@/actions/procesoc/crud-movprocesoc';
 import { CreateMovimientoDData, createNewMovimientoD } from '@/actions/procesod/crud-movprocesod';
 import { createUnifiedMovement, UnifiedMovementParams } from '@/actions/procesos/crud-completo-movimiento';
+import { useSound as useImportedSound } from 'use-sound';
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2 } from "lucide-react";
+import { SuccessNotification } from '../SuccessNotification';
 
 interface MoveProcessDialogProps {
     open: boolean;
@@ -47,6 +52,8 @@ interface MoveProcessDialogProps {
     onSuccess?: () => void; // Nueva prop para actualizar datos
 
 }
+
+
 
 export const MoveProcessDialog = ({
     open,
@@ -67,7 +74,13 @@ export const MoveProcessDialog = ({
     const [subprocesos, setSubprocesos] = useState<SubProceso[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [operators, setOperators] = useState<Personal[]>([]);
-    const [success, setSuccess] = useState(false);
+    const [successDetails, setSuccessDetails] = useState<{
+        show: boolean;
+        title?: string;
+        message?: string;
+    }>({ show: false });
+
+
 
     const getLocalDate = (localDate: Date): Date => {
         const offset = localDate.getTimezoneOffset() * 60000; // Ejemplo: 300 minutos * 60000 = +5h en ms
@@ -76,6 +89,16 @@ export const MoveProcessDialog = ({
 
         return utcDate;
     }
+
+    const [playSuccess] = useImportedSound(
+        '/sounds/mixkit-achievement-bell-600.wav',
+        {
+            volume: 0.7,
+            interrupt: true // Permite interrumpir si se vuelve a activar
+        }
+    );
+
+
 
     useEffect(() => {
         const fetchOperators = async () => {
@@ -126,7 +149,7 @@ export const MoveProcessDialog = ({
             setAsignaciones({});
             // Resetear a fecha actual cuando se cierra
             const now = new Date();
-            const localISOTime = getLocalDate(now).toISOString().slice(0, 16); // Convertir a UTC
+            const localISOTime = getLocalDate(now).toISOString().slice(0, 19); // Convertir a UTC
 
             console.log(localISOTime)
 
@@ -182,17 +205,37 @@ export const MoveProcessDialog = ({
                 pro_codpro: bloque.codigoProceso,
                 siguienteProceso: siguienteProceso.codigo,
                 fechaMovimiento: getLocalDate(fechaUtc),
-                operarioGeneral: tipoAsignacion === 'proceso' ? operarioGeneral : undefined,
-                asignacionesSubprocesos: tipoAsignacion === 'subproceso'
+                operarioGeneral: tipoAsignacion === 'proceso' ? operarioGeneral :
+                    tipoAsignacion === 'ninguno' ? '00' : undefined,
+                asignacionesSubprocesos: tipoAsignacion === 'proceso'
                     ? Object.fromEntries(
                         Object.entries(asignaciones).map(([key, value]) => [
                             key,
                             {
-                                operario: value.operario,
-                                fecha: value.fechaStr
+                                operario: operarioGeneral,
+                                fecha: getLocalDate(new Date(selectedDate))
                             }
                         ])
-                    ) : undefined
+                    ) : tipoAsignacion === 'subproceso'
+                        ? Object.fromEntries(
+                            Object.entries(asignaciones).map(([key, value]) => [
+                                key,
+                                {
+                                    operario: value.operario,
+                                    fecha: value.fechaStr
+                                }
+                            ])
+                        ) : tipoAsignacion === 'ninguno'
+                            ? Object.fromEntries(
+                                Object.entries(asignaciones).map(([key, value]) => [
+                                    key,
+                                    {
+                                        operario: '00',
+                                        fecha: getLocalDate(new Date(selectedDate))
+                                    }
+                                ])
+                            )
+                            : undefined
             };
 
             // Ejecutar la función unificada
@@ -201,27 +244,52 @@ export const MoveProcessDialog = ({
             // Notificar éxito
             onConfirm({
                 fecha: fechaUtc,
-                operarioGeneral: tipoAsignacion === 'proceso' ? operarioGeneral : null,
-                asignaciones: tipoAsignacion === 'subproceso'
+                operarioGeneral: tipoAsignacion === 'proceso' ? operarioGeneral :
+                    tipoAsignacion === 'ninguno' ? '00' : null,
+                asignaciones: tipoAsignacion === 'proceso'
                     ? Object.fromEntries(
                         Object.entries(asignaciones).map(([key, value]) => [
                             key,
                             {
-                                operario: value.operario,
-                                fecha: getLocalDate(value.fechaStr)
+                                operario: operarioGeneral,
+                                fecha: getLocalDate(new Date(selectedDate))
                             }
                         ])
-                    ) : {},
+                    ) : tipoAsignacion === 'subproceso'
+                        ? Object.fromEntries(
+                            Object.entries(asignaciones).map(([key, value]) => [
+                                key,
+                                {
+                                    operario: value.operario,
+                                    fecha: getLocalDate(value.fechaStr)
+                                }
+                            ])
+                        )
+                        : tipoAsignacion === 'ninguno'
+                            ? Object.fromEntries(
+                                Object.entries(asignaciones).map(([key, value]) => [
+                                    key,
+                                    {
+                                        operario: '00',
+                                        fecha: getLocalDate(new Date(selectedDate))
+                                    }
+                                ])
+                            )
+
+                            : {},
                 tipoAsignacion
             });
 
-            onOpenChange(false);
-            setSuccess(true);
+            setSuccessDetails({
+                show: true,
+                title: "¡Movimiento exitoso!",
+                message: "Los movimientos se registraron correctamente en el sistema."
+            });
 
             setTimeout(() => {
-                setSuccess(false);
+                onOpenChange(false);
                 if (onSuccess) onSuccess();
-            }, 10000);
+            }, 2000);
 
         } catch (error) {
             console.error("Error al confirmar movimiento:", error);
@@ -411,7 +479,7 @@ export const MoveProcessDialog = ({
                                                                     <div className="flex flex-col sm:flex-row gap-2">
                                                                         <Input
                                                                             type="datetime-local"
-                                                                            value={asignaciones[subproceso.pro_codsup]?.fechaStr.toISOString().slice(0, 16) || selectedDate}
+                                                                            value={asignaciones[subproceso.pro_codsup]?.fechaStr.toISOString().slice(0, 19) || selectedDate}
                                                                             onChange={(e) => handleFechaChange(subproceso.pro_codsup, new Date(e.target.value))}
                                                                             className="w-full"
                                                                         />
@@ -479,7 +547,7 @@ export const MoveProcessDialog = ({
                                                                             <div className="flex gap-2">
                                                                                 <Input
                                                                                     type="datetime-local"
-                                                                                    value={asignaciones[subproceso.pro_codsup]?.fechaStr.toISOString().slice(0, 16) || selectedDate}
+                                                                                    value={asignaciones[subproceso.pro_codsup]?.fechaStr.toISOString().slice(0, 19) || selectedDate}
                                                                                     onChange={(e) => handleFechaChange(subproceso.pro_codsup, getLocalDate(new Date(e.target.value)))}
                                                                                     className="flex-1 min-w-0"
                                                                                 />
@@ -530,22 +598,15 @@ export const MoveProcessDialog = ({
                 </DialogContent>
             </Dialog>
             {/* Mensaje de éxito */}
-            {success && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-                    <div className="bg-background p-6 rounded-lg shadow-lg max-w-sm border">
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-medium">¡Operación exitosa!</h3>
-                            <p className="text-sm text-muted-foreground">Los movimientos se registraron correctamente.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SuccessNotification
+                show={successDetails.show}
+                onClose={() => setSuccessDetails(prev => ({ ...prev, show: false }))}
+                title={successDetails.title}
+                message={successDetails.message}
+                duration={2000}
+            />
         </>
 
     );
 };
+

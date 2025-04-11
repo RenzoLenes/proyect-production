@@ -199,26 +199,24 @@ export const Customization = () => {
                   <img
                     src={company.logo}
                     alt="Logo"
-                    className="h-12 w-12 object-contain"
+                    className="h-10 w-10 object-contain"
                   />
                 ) : (
-                  <div className="h-12 w-12 rounded bg-accent flex items-center justify-center">
+                  <div className="h-10 w-10 rounded bg-accent flex items-center justify-center">
                     <span className="text-3xl font-semibold text-primary">
                       {company.name.charAt(0)}
                     </span>
                   </div>
                 )}
                 <div>
-                  <h4 className="font-medium">{company.name}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Vista previa del tema
+                    Cliente
                   </p>
+                  <h4 className="font-medium">{company.name}</h4>
+
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="h-4 w-3/4 rounded bg-accent" />
-                <div className="h-4 w-1/2 rounded bg-accent" />
-              </div>
+
             </div>
           </div>
         </div>

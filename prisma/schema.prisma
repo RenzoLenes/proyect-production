@@ -1230,6 +1230,8 @@ model tb_personal {
   pro_coddpt                String?                     @db.VarChar(10)
   pro_tipcon                String?                     @db.VarChar(50)
   pro_codtra                String?                     @db.VarChar(10)
+  pro_conper                String?                     @db.VarChar(255)
+  pro_rolper                String?                     @db.VarChar(20)
   tb_movimiento_mercaderiac tb_movimiento_mercaderiac[]
   tb_movimiento_procesoc    tb_movimiento_procesoc[]
   tb_movimiento_procesod    tb_movimiento_procesod[]

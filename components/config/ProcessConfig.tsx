@@ -1,295 +1,263 @@
-import { useProcessStore } from "@/lib/store/processStore";
-import { ProcessType } from "@/types/block";
-import { Process, SubProcess } from "@/types/process";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
-import { ChevronDown, ChevronUp, GripVertical, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Save } from "lucide-react";
+import { Prisma } from "@prisma/client";
+import { useConfigStore } from "@/lib/store/configStore";
+import { getProcesosByTipoConfeccion } from "@/actions/procesos/crud-proceso";
+import { getSubprocesosByProceso, updateSubproceso } from "@/actions/subprocesos/crud-subprocesos";
+import { SuccessNotification } from "../SuccessNotification";
+import { Proceso } from "@/interfaces/proceso.interface";
+import { SubProceso } from "@/interfaces/subproceso.interface";
+
 
 export const ProcessConfig = () => {
-    const { processes, updateProcess, toggleProcess, addProcess, addSubprocess, removeSubprocess, setProcesses, updateSubprocess } = useProcessStore();
-    const [newSubprocessName, setNewSubprocessName] = useState("");
-    const [newProcessName, setNewProcessName] = useState("");
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [procesos, setProcesos] = useState<Proceso[]>([]);
+    const [subprocesosByProceso, setSubprocesosByProceso] = useState<Record<string, SubProceso[]>>({});
     const [expandedProcessId, setExpandedProcessId] = useState<string | null>(null);
-    const [draggedProcessId, setDraggedProcessId] = useState<string | null>(null);
+    const { tipoConfeccion } = useConfigStore();
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [hasChanges, setHasChanges] = useState<boolean>(false);
+    const [successDetails, setSuccessDetails] = useState<{
+        show: boolean;
+        title?: string;
+        message?: string;
+    }>({ show: false });
 
-    // Manejo de procesos
-    const handleAddProcess = () => {
-        if (!newProcessName) return;
 
-        const newProcess: Process = {
-            id: `P${Date.now()}`,
-            name: newProcessName,
-            enabled: true,
-            estimatedTime: 0,
-            subprocesses: []
-        };
+    useEffect(() => {
+        if (!tipoConfeccion) return;
 
-        addProcess(newProcess);
-        setNewProcessName("");
-        setDialogOpen(false);
-    };
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const procesosData = await getProcesosByTipoConfeccion(tipoConfeccion);
+                setProcesos(procesosData);
 
-    const handleAddSubprocess = (processId: string) => {
-        if (!newSubprocessName) return;
-
-        const newSubprocess: SubProcess = {
-            id: `S${Date.now()}`,
-            name: newSubprocessName,
-            price_int: 0,
-            price_ext: 0,
-            type: ProcessType.Interno,
-            estimatedTime: 0
-        };
-
-        addSubprocess(processId, newSubprocess);
-        setNewSubprocessName("");
-    };
-
-    const handleUpdateProcess = (processId: string, field: keyof Process, value: any) => {
-        updateProcess(processId, { [field]: value });
-    };
-
-    const handleUpdateSubprocess = (processId: string, subprocessId: string, field: keyof SubProcess, value: any) => {
-        updateProcess(processId, {
-            subprocesses: processes.find(p => p.id === processId)?.subprocesses.map(sp =>
-                sp.id === subprocessId ? { ...sp, [field]: value } : sp
-            ) || []
-        });
-    };
-
-    // Manejo de drag and drop
-    const handleDragStart = (processId: string) => {
-        setDraggedProcessId(processId);
-    };
-
-    const handleDragOver = (e: React.DragEvent, targetProcessId: string) => {
-        e.preventDefault();
-        if (draggedProcessId && draggedProcessId !== targetProcessId) {
-            const dragIndex = processes.findIndex(p => p.id === draggedProcessId);
-            const hoverIndex = processes.findIndex(p => p.id === targetProcessId);
-
-            if (dragIndex !== -1 && hoverIndex !== -1) {
-                // Crear nueva lista reordenada
-                const newOrder = [...processes];
-                const [movedItem] = newOrder.splice(dragIndex, 1);
-                newOrder.splice(hoverIndex, 0, movedItem);
-
-                // Actualizar store con nuevo orden
-                setProcesses(newOrder);
-                console.log("new-order",newOrder);
-
+                // Fetch subprocesos for each proceso
+                const subprocesosMap: Record<string, SubProceso[]> = {};
+                for (const proceso of procesosData) {
+                    const subprocesos = await getSubprocesosByProceso(tipoConfeccion, proceso.pro_codpro);
+                    subprocesosMap[proceso.pro_codpro] = subprocesos;
+                }
+                setSubprocesosByProceso(subprocesosMap);
+                setHasChanges(false);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            } finally {
+                setIsLoading(false);
             }
+        };
 
+        fetchData();
+    }, [tipoConfeccion]);
+
+    //FALTA ARREGLAR QUE EL COSTO NO ES CERO
+
+    const handleUpdateSubproceso = (
+        procesoId: string, 
+        subprocesoId: string, 
+        field: 'pro_cosint' | 'pro_cosext', 
+        value: number
+    ) => {
+        const v = value;
+        console.log("Value:", v);
+
+        
+        setSubprocesosByProceso(prev => {
+            const updatedSubprocesos = prev[procesoId].map(sp =>
+                sp.pro_codsup === subprocesoId
+                    ? {
+                        ...sp,
+                        [field]: field === 'pro_cosint'
+                            ? new Prisma.Decimal(value)
+                            : value
+                    }
+                    : sp
+            );
+
+            return { ...prev, [procesoId]: updatedSubprocesos };
+        });
+        setHasChanges(true);
+    };
+
+    const toggleExpand = (procesoId: string) => {
+        setExpandedProcessId(expandedProcessId === procesoId ? null : procesoId);
+    };
+
+    const handleSaveChanges = async () => {
+        if (!tipoConfeccion) {
+            alert("Por favor seleccione un tipo de confección");
+            return;
         }
-        console.log("processes",processes);
+
+        setIsLoading(true);
+        try {
+            // Implementation for saving all changes to the database
+            const updatePromises = Object.entries(subprocesosByProceso).flatMap(([procesoId, subprocesos]) =>
+                subprocesos.map(subproceso =>
+                    updateSubproceso(
+                        {
+                            pro_codtic: subproceso.pro_codtic,
+                            pro_codpro: subproceso.pro_codpro,
+                            pro_codsup: subproceso.pro_codsup,
+                        },
+                        {
+                            pro_cosint: parseFloat(subproceso.pro_cosint.toString()),
+                            pro_cosext: parseFloat(subproceso.pro_cosext.toString())
+                        }
+                    )
+                )
+            );
+
+            await Promise.all(updatePromises);
+            setHasChanges(false);
+            setSuccessDetails({
+                show: true,
+                title: "¡Cambio exitoso!",
+                message: "Los subprocesos se registraron correctamente en el sistema."
+            });
+        } catch (error) {
+            console.error("Error saving changes:", error);
+            alert("Error al guardar los cambios");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleDragEnd = () => {
-        setDraggedProcessId(null);
-    };
+    if (!tipoConfeccion) {
+        return (
+            <div className="text-center p-8">
+                <p className="text-muted-foreground">Seleccione un tipo de confección para ver los procesos</p>
+            </div>
+        );
+    }
 
-    const toggleExpand = (processId: string) => {
-        setExpandedProcessId(expandedProcessId === processId ? null : processId);
-    };
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin" /></div>;
+    }
+
+    if (procesos.length === 0) {
+        return (
+            <div className="text-center p-8">
+                <p className="text-muted-foreground">No hay procesos disponibles para este tipo de confección</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
+            <SuccessNotification
+                show={successDetails.show}
+                onClose={() => setSuccessDetails(prev => ({ ...prev, show: false }))}
+                title={successDetails.title}
+                message={successDetails.message}
+                duration={2000}
+            />
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-semibold">Procesos y Subprocesos</h2>
-                <Button onClick={() => setDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Nuevo Proceso
+                <Button
+                    onClick={handleSaveChanges}
+                    disabled={!hasChanges}
+                >
+                    <Save className="mr-2 h-4 w-4" /> Guardar Cambios
                 </Button>
             </div>
 
             <div className="grid gap-3">
-                {processes.map((process) => (
-                    <div
-                        key={process.id}
-                        className={`border rounded-lg ${draggedProcessId === process.id ? 'border-primary bg-primary/10' : ''}`}
-                        draggable
-                        onDragStart={() => handleDragStart(process.id)}
-                        onDragOver={(e) => handleDragOver(e, process.id)}
-                        onDragEnd={handleDragEnd}
-                    >
+                {procesos.map((proceso) => {
+                    const subprocesos = subprocesosByProceso[proceso.pro_codpro] || [];
+
+                    return (
                         <div
-                            className="flex items-center justify-between p-4 cursor-pointer"
-                            onClick={() => toggleExpand(process.id)}
+                            key={proceso.pro_codpro}
+                            className="border rounded-lg"
                         >
-                            <div className="flex items-center gap-3">
-                                <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
-                                <h3 className="text-lg font-medium">{process.name}</h3>
-                                <span className="text-sm text-muted-foreground">
-                                    ({process.subprocesses.length} subprocesos)
-                                </span>
+                            <div
+                                className="flex items-center justify-between p-4 cursor-pointer"
+                                onClick={() => toggleExpand(proceso.pro_codpro)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-lg font-medium">{proceso.pro_nompro}</h3>
+                                    <span className="text-sm text-muted-foreground">
+                                        ({subprocesos.length} subprocesos)
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {expandedProcessId === proceso.pro_codpro ?
+                                        <ChevronUp className="h-5 w-5" /> :
+                                        <ChevronDown className="h-5 w-5" />
+                                    }
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Switch
-                                    checked={process.enabled}
-                                    onCheckedChange={() => toggleProcess(process.id)}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                                {expandedProcessId === process.id ?
-                                    <ChevronUp className="h-5 w-5" /> :
-                                    <ChevronDown className="h-5 w-5" />
-                                }
-                            </div>
-                        </div>
 
-                        {expandedProcessId === process.id && (
-                            <div className="p-4 pt-0 border-t">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Subprocesos</Label>
-                                        <div className="space-y-4">
-                                            {process.subprocesses.map((subprocess) => (
-                                                <div
-                                                    key={subprocess.id}
-                                                    className="bg-accent p-4 rounded-lg space-y-3"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium">{subprocess.name}</span>
-                                                        <div className="flex items-center gap-2">
-                                                            <Select
-                                                                value={subprocess.type}
-                                                                onValueChange={(value) =>
-                                                                    updateSubprocess(
-                                                                        process.id,
-                                                                        subprocess.id,
-                                                                        { type: value as ProcessType }
-                                                                    )
-                                                                }
-                                                            >
-                                                                <SelectTrigger className="h-8 w-24">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="Interno">Interno</SelectItem>
-                                                                    <SelectItem value="Externo">Externo</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 w-8 p-0"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    removeSubprocess(process.id, subprocess.id);
-                                                                }}
-                                                            >
-                                                                ×
-                                                            </Button>
+                            {expandedProcessId === proceso.pro_codpro && (
+                                <div className="p-4 pt-0 border-t">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Subprocesos</Label>
+                                            <div className="space-y-4">
+                                                {subprocesos.map((subproceso) => (
+                                                    <div
+                                                        key={subproceso.pro_codsup}
+                                                        className="bg-accent p-4 rounded-lg space-y-3"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium">{subproceso.pro_nomsup}</span>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                Código: {subproceso.pro_codsup}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label>Costo Interno ($/unidad)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={subproceso.pro_cosint.toString()}
+                                                                    onChange={(e) =>
+                                                                        handleUpdateSubproceso(
+                                                                            proceso.pro_codpro,
+                                                                            subproceso.pro_codsup,
+                                                                            'pro_cosint',
+                                                                            parseFloat(e.target.value)
+                                                                        )
+                                                                    }
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Costo Externo ($/unidad)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={subproceso.pro_cosext.toString()}
+                                                                    onChange={(e) =>
+                                                                        handleUpdateSubproceso(
+                                                                            proceso.pro_codpro,
+                                                                            subproceso.pro_codsup,
+                                                                            'pro_cosext',
+                                                                            parseFloat(e.target.value)
+                                                                        )
+                                                                    }
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label>Costo Interno ($/unidad)</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={subprocess.price_int || 0}
-                                                                onChange={(e) =>
-                                                                    handleUpdateSubprocess(
-                                                                        process.id,
-                                                                        subprocess.id,
-                                                                        'price_int',
-                                                                        parseFloat(e.target.value)
-                                                                    )
-                                                                }
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Costo Externo ($/unidad)</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={subprocess.price_ext || 0}
-                                                                onChange={(e) =>
-                                                                    handleUpdateSubprocess(
-                                                                        process.id,
-                                                                        subprocess.id,
-                                                                        'price_ext',
-                                                                        parseFloat(e.target.value)
-                                                                    )
-                                                                }
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Tiempo Estimado (min)</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={subprocess.estimatedTime || 0}
-                                                                onChange={(e) =>
-                                                                    handleUpdateSubprocess(
-                                                                        process.id,
-                                                                        subprocess.id,
-                                                                        'estimatedTime',
-                                                                        parseInt(e.target.value)
-                                                                    )
-                                                                }
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="flex gap-2 mt-2">
-                                            <Input
-                                                placeholder="Nuevo subproceso"
-                                                value={newSubprocessName}
-                                                onChange={(e) => setNewSubprocessName(e.target.value)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                            <Button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleAddSubprocess(process.id);
-                                                }}
-                                            >
-                                                Agregar
-                                            </Button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                            )}
+                        </div>
+                    );
+                })}
             </div>
-
-            {/* Diálogo para crear nuevo proceso */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Crear Nuevo Proceso</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="process-name">Nombre del Proceso</Label>
-                        <Input
-                            id="process-name"
-                            value={newProcessName}
-                            onChange={(e) => setNewProcessName(e.target.value)}
-                            placeholder="Ej: Producción, Empaque, etc."
-                            className="mt-2"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleAddProcess}>
-                            Crear Proceso
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 };
+
