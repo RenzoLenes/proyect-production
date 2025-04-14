@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client" // ← Agrega esta línea
 }
 
 datasource db {
@@ -844,8 +845,8 @@ model tb_movimiento_procesod {
   pro_fecsup           DateTime             @db.DateTime
   pro_cospro           Decimal              @db.Decimal(18, 2)
   pro_grumes           String?              @db.VarChar(10)
-  pro_fecini           DateTime?            @db.DateTime
-  pro_fecter           DateTime?            @db.DateTime
+  pro_fecini           DateTime?            @db.Date
+  pro_fecter           DateTime?            @db.Date
   pro_supter           String?              @db.VarChar(1)
   tb_parte_produccionc tb_parte_produccionc @relation(fields: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], references: [pro_codtic, pro_codfol, pro_numser, pro_numdoc], onUpdate: NoAction, map: "fk_movimiento_procesod_parte_producciond")
   tb_subproceso        tb_subproceso        @relation(fields: [pro_codtic, pro_codsup], references: [pro_codtic, pro_codsup], onUpdate: NoAction, map: "fk_movimiento_procesod_subproceso")
@@ -1230,13 +1231,14 @@ model tb_personal {
   pro_coddpt                String?                     @db.VarChar(10)
   pro_tipcon                String?                     @db.VarChar(50)
   pro_codtra                String?                     @db.VarChar(10)
+  pro_rolper                Int
   pro_conper                String?                     @db.VarChar(255)
-  pro_rolper                String?                     @db.VarChar(20)
   tb_movimiento_mercaderiac tb_movimiento_mercaderiac[]
   tb_movimiento_procesoc    tb_movimiento_procesoc[]
   tb_movimiento_procesod    tb_movimiento_procesod[]
   tb_movimiento_ventac      tb_movimiento_ventac[]
   tb_parte_produccionc      tb_parte_produccionc[]
+  tb_roles                  tb_roles                    @relation(fields: [pro_rolper], references: [rol_id], onUpdate: NoAction, map: "FK_personal_roles")
   tb_ubigeo                 tb_ubigeo                   @relation(fields: [pro_codubi], references: [pro_codubi], onUpdate: NoAction, map: "fk_personal_ubigeo")
   tb_rrhh_horario_ingreso   tb_rrhh_horario_ingreso[]
 }
@@ -1724,4 +1726,18 @@ model tb_vehiculo {
   pro_marveh String @db.VarChar(50)
   pro_modveh String @db.VarChar(50)
   pro_numins String @db.VarChar(50)
+}
+
+model tb_roles {
+  rol_id          Int           @id(map: "PK__tb_roles__CF32E443314C7439") @default(autoincrement())
+  rol_nombre      String        @unique(map: "UQ__tb_roles__4900B49AF722D03C") @db.VarChar(50)
+  rol_descripcion String?       @db.VarChar(200)
+  dashboard       Boolean?      @default(false, map: "DF__tb_roles__dashbo__73C51D7B")
+  production      Boolean?      @default(false, map: "DF__tb_roles__produc__74B941B4")
+  suppliers       Boolean?      @default(false, map: "DF__tb_roles__suppli__75AD65ED")
+  transport       Boolean?      @default(false, map: "DF__tb_roles__transp__76A18A26")
+  config          Boolean?      @default(false, map: "DF__tb_roles__config__7795AE5F")
+  rol_activo      Boolean?      @default(true, map: "DF__tb_roles__rol_ac__7889D298")
+  fecha_creacion  DateTime?     @default(now(), map: "DF__tb_roles__fecha___797DF6D1") @db.DateTime
+  tb_personal     tb_personal[]
 }
